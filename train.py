@@ -7,11 +7,17 @@ import torch.nn.functional as F
 import torchvision
 import models
 import utils
-import tabulate
+# import tabulate
+
+
+# cd 'C:\Users\alexy\OneDrive\Desktop\my_drop_box\second_degree\Deep Learning'
+
+# python3 swa/train.py --dir=datadir --dataset=CIFAR100 --data_path=datadir  --model=PreResNet110 --epochs=10 --lr_init=0.1 --wd=3e-4 --swa --swa_start=3 --swa_lr=0.05 
+
 
 
 parser = argparse.ArgumentParser(description='SGD/SWA training')
-parser.add_argument('--dir', type=str, default=None, required=True, help='training directory (default: None)')
+parser.add_argument('--dir', type=str, default='training_dir', required=True, help='training directory (default: None)')
 
 parser.add_argument('--dataset', type=str, default='CIFAR10', help='dataset name (default: CIFAR10)')
 parser.add_argument('--data_path', type=str, default=None, required=True, metavar='PATH',
@@ -140,6 +146,10 @@ utils.save_checkpoint(
     optimizer=optimizer.state_dict()
 )
 
+# define weighted averaging class
+weighted_moving_average=utils.Weighted_Moving_Average()
+
+
 for epoch in range(start_epoch, args.epochs):
     time_ep = time.time()
 
@@ -156,11 +166,15 @@ for epoch in range(start_epoch, args.epochs):
     # when args.swa_c_epochs==1 (the default), the third condition is always true
     # compute moving average when in swa mode
     if args.swa and (epoch + 1) >= args.swa_start and (epoch + 1 - args.swa_start) % args.swa_c_epochs == 0:
-        utils.moving_average(swa_model, model, 1.0 / (swa_n + 1))
-        swa_n += 1
+        # utils.moving_average(swa_model, model, 1.0 / (swa_n + 1))
+        # swa_n += 1
         if epoch == 0 or epoch % args.eval_freq == args.eval_freq - 1 or epoch == args.epochs - 1:
             utils.bn_update(loaders['train'], swa_model)
             swa_res = utils.eval(loaders['test'], swa_model, criterion)
+            
+            weighted_moving_average.update(swa_model, model,swa_res['accuracy'])
+
+            
         else:
             swa_res = {'loss': None, 'accuracy': None}
 
@@ -179,13 +193,17 @@ for epoch in range(start_epoch, args.epochs):
     values = [epoch + 1, lr, train_res['loss'], train_res['accuracy'], test_res['loss'], test_res['accuracy'], time_ep]
     if args.swa:
         values = values[:-1] + [swa_res['loss'], swa_res['accuracy']] + values[-1:]
-    table = tabulate.tabulate([values], columns, tablefmt='simple', floatfmt='8.4f')
-    if epoch % 40 == 0:
-        table = table.split('\n')
-        table = '\n'.join([table[1]] + table)
-    else:
-        table = table.split('\n')[2]
-    print(table)
+        
+        
+        
+        
+    # table = tabulate.tabulate([values], columns, tablefmt='simple', floatfmt='8.4f')
+    # if epoch % 40 == 0:
+    #     table = table.split('\n')
+    #     table = '\n'.join([table[1]] + table)
+    # else:
+    #     table = table.split('\n')[2]
+    # print(table)
 
 if args.epochs % args.save_freq != 0:
     utils.save_checkpoint(

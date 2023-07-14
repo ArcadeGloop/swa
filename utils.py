@@ -1,6 +1,35 @@
 import os
 import torch
+import torchvision.transforms as transforms
 
+def get_transforms_for(data=None):
+    
+    if data=='CIFAR10':
+          transform_train = transforms.Compose([
+              transforms.RandomCrop(32, padding=4),
+              transforms.RandomHorizontalFlip(),
+              transforms.ToTensor(),
+              transforms.Normalize((0.49139968 ,0.48215841, 0.44653091), (0.24703223, 0.24348513, 0.26158784)),
+          ])
+          transform_test = transforms.Compose([
+              transforms.ToTensor(),
+              transforms.Normalize((0.49139968 ,0.48215841, 0.44653091), (0.24703223, 0.24348513, 0.26158784)),
+          ])
+          
+    if data=='CIFAR100':
+          transform_train = transforms.Compose([
+              transforms.RandomCrop(32, padding=4),
+              transforms.RandomHorizontalFlip(),
+              transforms.ToTensor(),
+              transforms.Normalize((0.50707516, 0.48654887, 0.44091784), (0.26733429, 0.25643846, 0.27615047)),
+          ])
+          transform_test = transforms.Compose([
+              transforms.ToTensor(),
+              transforms.Normalize((0.50707516, 0.48654887, 0.44091784), (0.26733429, 0.25643846, 0.27615047)),
+          ])
+          
+    return transform_train, transform_test
+          
 
 def adjust_learning_rate(optimizer, lr):
     for param_group in optimizer.param_groups:
@@ -75,6 +104,35 @@ def moving_average(net1, net2, alpha=1):
     for param1, param2 in zip(net1.parameters(), net2.parameters()):
         param1.data *= (1.0 - alpha)
         param1.data += param2.data * alpha
+
+
+class Weighted_Moving_Average():
+    
+    def __init__(self):
+        self.weight_sum=None
+    
+    def update(self,net1, net2,weight=1):
+        
+        first_update=self.weight_sum==None
+        
+        if first_update:
+            for param1, param2 in zip(net1.parameters(), net2.parameters()):
+                param1.data = param2.data
+            
+            self.weight_sum=weight
+            
+        if not first_update:
+            for param1, param2 in zip(net1.parameters(), net2.parameters()):
+                param1.data *= self.weight_sum
+                param1.data += param2.data * weight
+                param1.data/=(self.weight_sum+weight)
+                
+            self.weight_sum+=weight
+            
+    def reset(self):
+        self.weight_sum=None
+
+
 
 
 def _check_bn(module, flag):
