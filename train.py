@@ -7,7 +7,14 @@ import torch.nn.functional as F
 import torchvision
 import models
 import utils
-# import tabulate
+import tabulate
+
+
+# TODO
+# see if it runs on colab
+# see how to download experiment results
+# implement new model saving with score
+# replace with smaller models
 
 
 # cd 'C:\Users\alexy\OneDrive\Desktop\my_drop_box\second_degree\Deep Learning'
@@ -197,13 +204,13 @@ for epoch in range(start_epoch, args.epochs):
         
         
         
-    # table = tabulate.tabulate([values], columns, tablefmt='simple', floatfmt='8.4f')
-    # if epoch % 40 == 0:
-    #     table = table.split('\n')
-    #     table = '\n'.join([table[1]] + table)
-    # else:
-    #     table = table.split('\n')[2]
-    # print(table)
+    table = tabulate.tabulate([values], columns, tablefmt='simple', floatfmt='8.4f')
+    if epoch % 40 == 0:
+        table = table.split('\n')
+        table = '\n'.join([table[1]] + table)
+    else:
+        table = table.split('\n')[2]
+    print(table)
 
 if args.epochs % args.save_freq != 0:
     utils.save_checkpoint(
