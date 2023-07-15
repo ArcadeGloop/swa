@@ -37,10 +37,9 @@ def adjust_learning_rate(optimizer, lr):
     return lr
 
 
-def save_checkpoint(dir, epoch, training_accuracy, **kwargs): # add train accuracy here
+def save_checkpoint(dir, epoch, **kwargs): # add train accuracy here
     state = {
         'epoch': epoch,
-        'training_accuracy':training_accuracy
     }
     state.update(kwargs)
     filepath = os.path.join(dir, 'checkpoint-%d.pt' % epoch)
