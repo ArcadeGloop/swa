@@ -17,7 +17,7 @@ import tabulate
 # see how to download experiment results - DONE
 # implement new model saving with score
 # replace with smaller models
-
+# save the data we need along the way seperatly?
 
 # cd 'C:\Users\alexy\OneDrive\Desktop\my_drop_box\second_degree\Deep Learning'
 
@@ -150,10 +150,18 @@ if args.swa:
     columns = columns[:-1] + ['swa_te_loss', 'swa_te_acc'] + columns[-1:]
     swa_res = {'loss': None, 'accuracy': None}
 
+
+train_res = {'loss': None, 'accuracy': None}
+test_res = {'loss': None, 'accuracy': None}
+swa_res = {'loss': None, 'accuracy': None}
+
 utils.save_checkpoint(
     args.dir,
     start_epoch,
-    state_dict=model.state_dict(),
+    train_res,
+    test_res,
+    swa_res if args.swa else None,
+    state_dict=model.state_dict(),   
     swa_state_dict=swa_model.state_dict() if args.swa else None,
     swa_n=swa_n if args.swa else None,
     optimizer=optimizer.state_dict()
@@ -171,14 +179,15 @@ for epoch in range(start_epoch, args.epochs):
     train_res = utils.train_epoch(loaders['train'], model, criterion, optimizer)
 
     # check loss and accuracy on the test set when evaluation frequency is reached and for the final epoch
-    if epoch == 0 or epoch % args.eval_freq == args.eval_freq - 1 or epoch == args.epochs - 1:
+    evaluation_time = epoch == 0 or epoch % args.eval_freq == args.eval_freq - 1 or epoch == args.epochs - 1
+    if evaluation_time:
         test_res = utils.eval(loaders['test'], model, criterion)
     else:
         test_res = {'loss': None, 'accuracy': None}
 
     # when args.swa_c_epochs==1 (the default), the third condition is always true
     # compute moving average when in swa mode
-    time_to_update_swa= args.swa and (epoch + 1) >= args.swa_start and (epoch + 1 - args.swa_start) % args.swa_c_epochs == 0
+    time_to_update_swa = args.swa and (epoch + 1) >= args.swa_start and (epoch + 1 - args.swa_start) % args.swa_c_epochs == 0
     if time_to_update_swa:
         
         # OLD
@@ -188,7 +197,7 @@ for epoch in range(start_epoch, args.epochs):
         # ___ our replacement ___
         weighted_moving_average.update(swa_model, model,train_res['accuracy'])
 
-        time_to_evaluate_swa= epoch == 0 or epoch % args.eval_freq == args.eval_freq - 1 or epoch == args.epochs - 1
+        time_to_evaluate_swa = epoch == 0 or epoch % args.eval_freq == args.eval_freq - 1 or epoch == args.epochs - 1
         
         if time_to_evaluate_swa:
             utils.bn_update(loaders['train'], swa_model)
@@ -201,9 +210,9 @@ for epoch in range(start_epoch, args.epochs):
             args.dir,
             epoch + 1,
             train_res,
-            
+            test_res,
             swa_res if args.swa else None,
-            state_dict=model.state_dict(),
+            state_dict=model.state_dict(),   
             swa_state_dict=swa_model.state_dict() if args.swa else None,
             swa_n=swa_n if args.swa else None,
             optimizer=optimizer.state_dict()
@@ -226,8 +235,11 @@ for epoch in range(start_epoch, args.epochs):
 if args.epochs % args.save_freq != 0:
     utils.save_checkpoint(
         args.dir,
-        args.epochs,
-        state_dict=model.state_dict(),
+        epoch + 1,
+        train_res,
+        test_res,
+        swa_res if args.swa else None,
+        state_dict=model.state_dict(),   
         swa_state_dict=swa_model.state_dict() if args.swa else None,
         swa_n=swa_n if args.swa else None,
         optimizer=optimizer.state_dict()
