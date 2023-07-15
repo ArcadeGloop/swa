@@ -9,10 +9,12 @@ import models
 import utils
 import tabulate
 
+# Notes
+# 70 seconds for 1 epoch with preresnet
 
 # TODO
-# see if it runs on colab
-# see how to download experiment results
+# see if it runs on colab - DONE
+# see how to download experiment results - DONE
 # implement new model saving with score
 # replace with smaller models
 
@@ -38,7 +40,7 @@ parser.add_argument('--resume', type=str, default=None, metavar='CKPT',
                     help='checkpoint to resume training from (default: None)')
 
 parser.add_argument('--epochs', type=int, default=200, metavar='N', help='number of epochs to train (default: 200)')
-parser.add_argument('--save_freq', type=int, default=25, metavar='N', help='save frequency (default: 25)')
+parser.add_argument('--save_freq', type=int, default=1, metavar='N', help='save frequency (default: 1)')
 parser.add_argument('--eval_freq', type=int, default=5, metavar='N', help='evaluation frequency (default: 5)')
 parser.add_argument('--lr_init', type=float, default=0.1, metavar='LR', help='initial learning rate (default: 0.01)')
 parser.add_argument('--momentum', type=float, default=0.9, metavar='M', help='SGD momentum (default: 0.9)')
@@ -65,13 +67,17 @@ torch.manual_seed(args.seed)
 torch.cuda.manual_seed(args.seed)
 
 print('Using model %s' % args.model)
-model_cfg = getattr(models, args.model)
-
+if args.model in ['PreResNet164','PreResNet110', 'VGG16', 'WideResNet28x10']: # original
+    model_cfg = getattr(models, args.model)
+else: # ours
+    pass
+    
 print('Loading dataset %s from %s' % (args.dataset, args.data_path))
 ds = getattr(torchvision.datasets, args.dataset)
 path = os.path.join(args.data_path, args.dataset.lower())
-train_set = ds(path, train=True, download=True, transform=model_cfg.transform_train)
-test_set = ds(path, train=False, download=True, transform=model_cfg.transform_test)
+train_transform, test_transform=utils.get_transforms_for(args.dataset) # our addition
+train_set = ds(path, train=True, download=True, transform=train_transform)
+test_set = ds(path, train=False, download=True, transform=test_transform)
 loaders = {
     'train': torch.utils.data.DataLoader(
         train_set,
@@ -172,16 +178,21 @@ for epoch in range(start_epoch, args.epochs):
 
     # when args.swa_c_epochs==1 (the default), the third condition is always true
     # compute moving average when in swa mode
-    if args.swa and (epoch + 1) >= args.swa_start and (epoch + 1 - args.swa_start) % args.swa_c_epochs == 0:
+    time_to_update_swa= args.swa and (epoch + 1) >= args.swa_start and (epoch + 1 - args.swa_start) % args.swa_c_epochs == 0
+    if time_to_update_swa:
+        
+        # OLD
         # utils.moving_average(swa_model, model, 1.0 / (swa_n + 1))
         # swa_n += 1
-        if epoch == 0 or epoch % args.eval_freq == args.eval_freq - 1 or epoch == args.epochs - 1:
+        
+        # ___ our replacement ___
+        weighted_moving_average.update(swa_model, model,train_res['accuracy'])
+
+        time_to_evaluate_swa= epoch == 0 or epoch % args.eval_freq == args.eval_freq - 1 or epoch == args.epochs - 1
+        
+        if time_to_evaluate_swa:
             utils.bn_update(loaders['train'], swa_model)
             swa_res = utils.eval(loaders['test'], swa_model, criterion)
-            
-            weighted_moving_average.update(swa_model, model,swa_res['accuracy'])
-
-            
         else:
             swa_res = {'loss': None, 'accuracy': None}
 
@@ -189,6 +200,9 @@ for epoch in range(start_epoch, args.epochs):
         utils.save_checkpoint(
             args.dir,
             epoch + 1,
+            train_res,
+            
+            swa_res if args.swa else None,
             state_dict=model.state_dict(),
             swa_state_dict=swa_model.state_dict() if args.swa else None,
             swa_n=swa_n if args.swa else None,
@@ -200,10 +214,6 @@ for epoch in range(start_epoch, args.epochs):
     values = [epoch + 1, lr, train_res['loss'], train_res['accuracy'], test_res['loss'], test_res['accuracy'], time_ep]
     if args.swa:
         values = values[:-1] + [swa_res['loss'], swa_res['accuracy']] + values[-1:]
-        
-        
-        
-        
     table = tabulate.tabulate([values], columns, tablefmt='simple', floatfmt='8.4f')
     if epoch % 40 == 0:
         table = table.split('\n')
@@ -211,6 +221,7 @@ for epoch in range(start_epoch, args.epochs):
     else:
         table = table.split('\n')[2]
     print(table)
+
 
 if args.epochs % args.save_freq != 0:
     utils.save_checkpoint(

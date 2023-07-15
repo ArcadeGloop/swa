@@ -37,9 +37,10 @@ def adjust_learning_rate(optimizer, lr):
     return lr
 
 
-def save_checkpoint(dir, epoch, **kwargs):
+def save_checkpoint(dir, epoch, training_accuracy, **kwargs): # add train accuracy here
     state = {
         'epoch': epoch,
+        'training_accuracy':training_accuracy
     }
     state.update(kwargs)
     filepath = os.path.join(dir, 'checkpoint-%d.pt' % epoch)
@@ -106,7 +107,7 @@ def moving_average(net1, net2, alpha=1):
         param1.data += param2.data * alpha
 
 
-class Weighted_Moving_Average():
+class Weighted_Moving_Average(): # our addition
     
     def __init__(self):
         self.weight_sum=None
