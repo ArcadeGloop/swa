@@ -305,7 +305,7 @@ our_swa_test_res = utils.eval(loaders['test'], our_swa_model, criterion)
 
 print('__________________________')
 print(f'the test accuracy of the original SWA is: {swa_test_res["accuracy"]:.4f}')
-print(f'the test accuracy of our SWA is: {our_swa_test_res["accuracy"]:.2f}')
+print(f'the test accuracy of our SWA is: {our_swa_test_res["accuracy"]:.4f}')
 
 
 
