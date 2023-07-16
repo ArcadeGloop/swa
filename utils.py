@@ -37,20 +37,22 @@ def adjust_learning_rate(optimizer, lr):
     return lr
 
 
-def save_checkpoint(dir, epoch,training_results,test_results,swa_results, **kwargs): # add train accuracy here
+def save_checkpoint(dir, epoch, **kwargs): # add train accuracy here
     state = {
         'epoch': epoch,
-        'training_loss':training_results['loss'] ,
-        'training_accuracy': training_results['accuracy'],
-        'test_loss': test_results['loss'],
-        'test_accuracy': test_results['accuracy'],
-        'swa_test_loss': test_results['loss'],
-        'swa_test_accuracy': test_results['accuracy'],
+        
     }
     state.update(kwargs)
     filepath = os.path.join(dir, 'checkpoint-%d.pt' % epoch)
     torch.save(state, filepath)
 
+# training_results,test_results,swa_results,
+# 'training_loss':training_results['loss'] ,  
+# 'training_accuracy': training_results['accuracy'],
+# 'test_loss': test_results['loss'],
+# 'test_accuracy': test_results['accuracy'],
+# 'swa_test_loss': test_results['loss'],
+# 'swa_test_accuracy': test_results['accuracy'],
 
 def train_epoch(loader, model, criterion, optimizer):
     loss_sum = 0.0

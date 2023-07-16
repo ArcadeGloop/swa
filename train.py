@@ -11,6 +11,11 @@ import tabulate
 
 # Notes
 # 70 seconds for 1 epoch with preresnet
+# update both the swa and improved swa model each time. for comparison
+
+# Bugs
+# fix model saving
+
 
 # TODO
 # see if it runs on colab - DONE
@@ -18,6 +23,8 @@ import tabulate
 # implement new model saving with score
 # replace with smaller models
 # save the data we need along the way seperatly?
+
+
 
 # cd 'C:\Users\alexy\OneDrive\Desktop\my_drop_box\second_degree\Deep Learning'
 
@@ -67,11 +74,13 @@ torch.manual_seed(args.seed)
 torch.cuda.manual_seed(args.seed)
 
 print('Using model %s' % args.model)
-if args.model in ['PreResNet164','PreResNet110', 'VGG16', 'WideResNet28x10']: # original
+if args.model in ['PreResNet38','PreResNet164','PreResNet110', 'VGG16', 'WideResNet28x10']: # original
     model_cfg = getattr(models, args.model)
 else: # ours
     pass
     
+
+
 print('Loading dataset %s from %s' % (args.dataset, args.data_path))
 ds = getattr(torchvision.datasets, args.dataset)
 path = os.path.join(args.data_path, args.dataset.lower())
@@ -105,6 +114,9 @@ if args.swa:
     print('SWA training')
     swa_model = model_cfg.base(*model_cfg.args, num_classes=num_classes, **model_cfg.kwargs)
     swa_model.cuda()
+    
+    our_swa_model = model_cfg.base(*model_cfg.args, num_classes=num_classes, **model_cfg.kwargs)
+    our_swa_model.cuda()
     swa_n = 0
 else:
     print('SGD training')
@@ -147,25 +159,30 @@ if args.resume is not None:
 
 columns = ['ep', 'lr', 'tr_loss', 'tr_acc', 'te_loss', 'te_acc', 'time']
 if args.swa:
-    columns = columns[:-1] + ['swa_te_loss', 'swa_te_acc'] + columns[-1:]
+    columns = columns[:-1] + ['swa_te_loss', 'swa_te_acc','our_swa_te_loss','our_swa_te_acc'] + columns[-1:]
     swa_res = {'loss': None, 'accuracy': None}
+    our_swa_res = {'loss': None, 'accuracy': None}
+
 
 
 train_res = {'loss': None, 'accuracy': None}
 test_res = {'loss': None, 'accuracy': None}
 swa_res = {'loss': None, 'accuracy': None}
+our_swa_res = {'loss': None, 'accuracy': None}
 
 utils.save_checkpoint(
     args.dir,
     start_epoch,
-    train_res,
-    test_res,
-    swa_res if args.swa else None,
+   
     state_dict=model.state_dict(),   
     swa_state_dict=swa_model.state_dict() if args.swa else None,
     swa_n=swa_n if args.swa else None,
     optimizer=optimizer.state_dict()
 )
+
+ # train_res,
+ # test_res,
+ # swa_res if args.swa else None,
 
 # define weighted averaging class
 weighted_moving_average=utils.Weighted_Moving_Average()
@@ -209,15 +226,15 @@ for epoch in range(start_epoch, args.epochs):
         utils.save_checkpoint(
             args.dir,
             epoch + 1,
-            train_res,
-            test_res,
-            swa_res if args.swa else None,
+           
             state_dict=model.state_dict(),   
             swa_state_dict=swa_model.state_dict() if args.swa else None,
             swa_n=swa_n if args.swa else None,
             optimizer=optimizer.state_dict()
         )
-
+ # train_res,
+ # test_res,
+ # swa_res if args.swa else None,
     # print progress
     time_ep = time.time() - time_ep
     values = [epoch + 1, lr, train_res['loss'], train_res['accuracy'], test_res['loss'], test_res['accuracy'], time_ep]
@@ -236,11 +253,13 @@ if args.epochs % args.save_freq != 0:
     utils.save_checkpoint(
         args.dir,
         epoch + 1,
-        train_res,
-        test_res,
-        swa_res if args.swa else None,
+      
         state_dict=model.state_dict(),   
         swa_state_dict=swa_model.state_dict() if args.swa else None,
         swa_n=swa_n if args.swa else None,
         optimizer=optimizer.state_dict()
     )
+
+  # train_res,
+  # test_res,
+  # swa_res if args.swa else None,
