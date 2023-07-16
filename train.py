@@ -109,9 +109,12 @@ model.cuda()
 
 if args.swa:
     print('SWA training')
+    
+    # original model
     swa_model = model_cfg.base(*model_cfg.args, num_classes=num_classes, **model_cfg.kwargs)
     swa_model.cuda()
     
+    # our model with new averaging
     our_swa_model = model_cfg.base(*model_cfg.args, num_classes=num_classes, **model_cfg.kwargs)
     our_swa_model.cuda()
     swa_n = 0
@@ -146,17 +149,27 @@ if args.resume is not None:
     start_epoch = checkpoint['epoch']
     model.load_state_dict(checkpoint['state_dict'])
     optimizer.load_state_dict(checkpoint['optimizer'])
-    if args.swa:
+    
+    
+    if args.swa: 
+    
+        # original swa
         swa_state_dict = checkpoint['swa_state_dict']
         if swa_state_dict is not None:
             swa_model.load_state_dict(swa_state_dict)
+        
+        # our swa
+        our_swa_state_dict = checkpoint['our_swa_state_dict']
+        if our_swa_state_dict is not None:
+            our_swa_model.load_state_dict(our_swa_state_dict)
+            
         swa_n_ckpt = checkpoint['swa_n']
         if swa_n_ckpt is not None:
             swa_n = swa_n_ckpt
 
 columns = ['ep', 'lr', 'tr_loss', 'tr_acc', 'te_loss', 'te_acc', 'time']
 if args.swa:
-    columns = columns[:-1] + ['swa_te_loss', 'swa_te_acc'] + columns[-1:]
+    columns = columns[:-1] + ['swa_te_loss', 'swa_te_acc','our_swa_te_loss', 'our_swa_te_acc'] + columns[-1:]
     swa_res = {'loss': None, 'accuracy': None}
     our_swa_res = {'loss': None, 'accuracy': None}
 
@@ -170,7 +183,15 @@ our_swa_res = {'loss': None, 'accuracy': None}
 utils.save_checkpoint(
     args.dir,
     start_epoch,
-   
+    
+    # our additions
+    train_res=train_res,
+    test_res=test_res,
+    swa_res=swa_res if args.swa else None,
+    our_swa_res=our_swa_res if args.swa else None,
+    our_swa_state_dict=our_swa_model.state_dict() if args.swa else None,
+    
+    
     state_dict=model.state_dict(),   
     swa_state_dict=swa_model.state_dict() if args.swa else None,
     swa_n=swa_n if args.swa else None,
@@ -201,18 +222,39 @@ for epoch in range(start_epoch, args.epochs):
     # when args.swa_c_epochs==1 (the default), the third condition is always true
     # compute moving average when in swa mode
     if args.swa and (epoch + 1) >= args.swa_start and (epoch + 1 - args.swa_start) % args.swa_c_epochs == 0:
+        
+        # original swa
         utils.moving_average(swa_model, model, 1.0 / (swa_n + 1))
+        
+        # our swa
+        weighted_moving_average.update(our_swa_model, model, train_res['accuracy'])
+
         swa_n += 1
+        
         if epoch == 0 or epoch % args.eval_freq == args.eval_freq - 1 or epoch == args.epochs - 1:
             utils.bn_update(loaders['train'], swa_model)
             swa_res = utils.eval(loaders['test'], swa_model, criterion)
+            
+            # our swa
+            utils.bn_update(loaders['train'], our_swa_model)
+            our_swa_res = utils.eval(loaders['test'], our_swa_model, criterion)
+
         else:
             swa_res = {'loss': None, 'accuracy': None}
+            our_swa_res = {'loss': None, 'accuracy': None}
 
     if (epoch + 1) % args.save_freq == 0:
         utils.save_checkpoint(
             args.dir,
             epoch + 1,
+            
+            # our additions
+            train_res=train_res,
+            test_res=test_res,
+            swa_res=swa_res if args.swa else None,
+            our_swa_res=our_swa_res if args.swa else None,
+            our_swa_state_dict=our_swa_model.state_dict() if args.swa else None,
+            
             state_dict=model.state_dict(),
             swa_state_dict=swa_model.state_dict() if args.swa else None,
             swa_n=swa_n if args.swa else None,
@@ -236,6 +278,14 @@ if args.epochs % args.save_freq != 0:
     utils.save_checkpoint(
         args.dir,
         args.epochs,
+        
+        # our additions
+        train_res=train_res,
+        test_res=test_res,
+        swa_res=swa_res if args.swa else None,
+        our_swa_res=our_swa_res if args.swa else None,
+        our_swa_state_dict=our_swa_model.state_dict() if args.swa else None,
+        
         state_dict=model.state_dict(),
         swa_state_dict=swa_model.state_dict() if args.swa else None,
         swa_n=swa_n if args.swa else None,
