@@ -14,12 +14,12 @@ import tabulate
 
 
 # Bugs
-
+# our first swa result is always bad
 
 # TODO
 # check if they calculate accuracy correctly
 # change our swa to use validation acc
-# during averaging, first check similarity to new weights, remove outliars.
+# during averaging, first check similarity to new weights, dont use outliars.
 # trying using as weight: 
     # plain val_acc, MinMax normalized val_acc, 
 
@@ -80,7 +80,6 @@ torch.manual_seed(args.seed)
 torch.cuda.manual_seed(args.seed)
 
 print('Using model %s' % args.model)
-# if args.model in ['PreResNet38','PreResNet164','PreResNet110', 'VGG16', 'WideResNet28x10']: # original
 model_cfg = getattr(models, args.model)
 
 
@@ -299,9 +298,10 @@ our_swa_test_res = utils.eval(loaders['test'], our_swa_model, criterion)
 
 
 # pring test results
+
 print('__________________________')
-print(f'the test score of the original SWA is: {swa_test_res:.4f}')
-print(f'the test score of our SWA is: {our_swa_test_res:.4f}')
+print(f'the test accuracy of the original SWA is: {swa_test_res["accuracy"]:.4f}')
+print(f'the test accuracy of our SWA is: {our_swa_test_res["accuracy"]:.2f}')
 
 
 
