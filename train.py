@@ -203,8 +203,9 @@ utils.save_checkpoint(
  # swa_res if args.swa else None,
 
 # define weighted averaging class
-weighted_moving_average=utils.Weighted_Moving_Average()
+# weighted_moving_average=utils.Weighted_Moving_Average()
 
+weight_sum=0
 
 for epoch in range(start_epoch, args.epochs):
     time_ep = time.time()
@@ -228,7 +229,9 @@ for epoch in range(start_epoch, args.epochs):
         
         # our swa
         # utils.weighted_moving_average.update(our_swa_model, model, train_res['accuracy'])
-        weighted_moving_average.update(our_swa_model, model, train_res['accuracy'])
+        # weighted_moving_average.update(our_swa_model, model, train_res['accuracy'])
+        weight_sum+=train_res['accuracy']
+        utils.weighted_moving_average(our_swa_model, model, train_res['accuracy'],weight_sum)
 
         swa_n += 1
         
