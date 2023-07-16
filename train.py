@@ -85,6 +85,8 @@ ds = getattr(torchvision.datasets, args.dataset)
 path = os.path.join(args.data_path, args.dataset.lower())
 train_transform, test_transform=utils.get_transforms_for(args.dataset) # our addition
 train_set = ds(path, train=True, download=True, transform=train_transform)
+num_classes = max(train_set.targets) + 1
+generator = torch.Generator().manual_seed(args.seed)
 train_set, valid_set = torch.utils.data.random_split(train_set, [1-args.val_size, args.val_size]) # our addition
 test_set = ds(path, train=False, download=True, transform=test_transform)
 loaders = {
@@ -110,7 +112,7 @@ loaders = {
         pin_memory=True
     )
 }
-num_classes = max(train_set.targets) + 1
+# num_classes = max(train_set.targets) + 1
 
 print('Preparing model')
 model = model_cfg.base(*model_cfg.args, num_classes=num_classes, **model_cfg.kwargs)
