@@ -265,7 +265,7 @@ for epoch in range(start_epoch, args.epochs):
     time_ep = time.time() - time_ep
     values = [epoch + 1, lr, train_res['loss'], train_res['accuracy'], test_res['loss'], test_res['accuracy'], time_ep]
     if args.swa:
-        values = values[:-1] + [swa_res['loss'], swa_res['accuracy']] + values[-1:]
+        values = values[:-1] + [swa_res['loss'], swa_res['accuracy'], our_swa_res['loss'], our_swa_res['accuracy'] ] + values[-1:]
     table = tabulate.tabulate([values], columns, tablefmt='simple', floatfmt='8.4f')
     if epoch % 40 == 0:
         table = table.split('\n')
