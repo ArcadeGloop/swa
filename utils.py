@@ -121,34 +121,6 @@ def weighted_moving_average(net1, net2, weight, weight_sum):
         param1.data/=(weight_sum+weight)
 
 
-class Weighted_Moving_Average(): # our addition
-    
-    def __init__(self):
-        self.weight_sum=None
-    
-    def update(self,net1, net2,weight=1):
-        
-        first_update=self.weight_sum==None
-       
-        if not first_update:
-            for param1, param2 in zip(net1.parameters(), net2.parameters()):
-                param1.data *= self.weight_sum
-                param1.data += param2.data * weight
-                param1.data/=(self.weight_sum+weight)
-                
-            self.weight_sum+=weight
-            
-        if first_update:
-            for param1, param2 in zip(net1.parameters(), net2.parameters()):
-                param1.data = param2.data
-            
-            self.weight_sum=weight
-            
-      
-            
-    def reset(self):
-        self.weight_sum=None
-
 
 
 
@@ -208,3 +180,6 @@ def bn_update(loader, model):
         n += b
 
     model.apply(lambda module: _set_momenta(module, momenta))
+    
+    
+    
