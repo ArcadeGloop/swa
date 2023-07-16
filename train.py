@@ -74,11 +74,8 @@ torch.manual_seed(args.seed)
 torch.cuda.manual_seed(args.seed)
 
 print('Using model %s' % args.model)
-if args.model in ['PreResNet38','PreResNet164','PreResNet110', 'VGG16', 'WideResNet28x10']: # original
-    model_cfg = getattr(models, args.model)
-else: # ours
-    pass
-    
+# if args.model in ['PreResNet38','PreResNet164','PreResNet110', 'VGG16', 'WideResNet28x10']: # original
+model_cfg = getattr(models, args.model)
 
 
 print('Loading dataset %s from %s' % (args.dataset, args.data_path))
@@ -159,11 +156,11 @@ if args.resume is not None:
 
 columns = ['ep', 'lr', 'tr_loss', 'tr_acc', 'te_loss', 'te_acc', 'time']
 if args.swa:
-    columns = columns[:-1] + ['swa_te_loss', 'swa_te_acc','our_swa_te_loss','our_swa_te_acc'] + columns[-1:]
+    columns = columns[:-1] + ['swa_te_loss', 'swa_te_acc'] + columns[-1:]
     swa_res = {'loss': None, 'accuracy': None}
     our_swa_res = {'loss': None, 'accuracy': None}
 
-
+# 'our_swa_te_loss','our_swa_te_acc'
 
 train_res = {'loss': None, 'accuracy': None}
 test_res = {'loss': None, 'accuracy': None}
@@ -196,27 +193,17 @@ for epoch in range(start_epoch, args.epochs):
     train_res = utils.train_epoch(loaders['train'], model, criterion, optimizer)
 
     # check loss and accuracy on the test set when evaluation frequency is reached and for the final epoch
-    evaluation_time = epoch == 0 or epoch % args.eval_freq == args.eval_freq - 1 or epoch == args.epochs - 1
-    if evaluation_time:
+    if epoch == 0 or epoch % args.eval_freq == args.eval_freq - 1 or epoch == args.epochs - 1:
         test_res = utils.eval(loaders['test'], model, criterion)
     else:
         test_res = {'loss': None, 'accuracy': None}
 
     # when args.swa_c_epochs==1 (the default), the third condition is always true
     # compute moving average when in swa mode
-    time_to_update_swa = args.swa and (epoch + 1) >= args.swa_start and (epoch + 1 - args.swa_start) % args.swa_c_epochs == 0
-    if time_to_update_swa:
-        
-        # OLD
-        # utils.moving_average(swa_model, model, 1.0 / (swa_n + 1))
-        # swa_n += 1
-        
-        # ___ our replacement ___
-        weighted_moving_average.update(swa_model, model,train_res['accuracy'])
-
-        time_to_evaluate_swa = epoch == 0 or epoch % args.eval_freq == args.eval_freq - 1 or epoch == args.epochs - 1
-        
-        if time_to_evaluate_swa:
+    if args.swa and (epoch + 1) >= args.swa_start and (epoch + 1 - args.swa_start) % args.swa_c_epochs == 0:
+        utils.moving_average(swa_model, model, 1.0 / (swa_n + 1))
+        swa_n += 1
+        if epoch == 0 or epoch % args.eval_freq == args.eval_freq - 1 or epoch == args.epochs - 1:
             utils.bn_update(loaders['train'], swa_model)
             swa_res = utils.eval(loaders['test'], swa_model, criterion)
         else:
@@ -226,15 +213,12 @@ for epoch in range(start_epoch, args.epochs):
         utils.save_checkpoint(
             args.dir,
             epoch + 1,
-           
-            state_dict=model.state_dict(),   
+            state_dict=model.state_dict(),
             swa_state_dict=swa_model.state_dict() if args.swa else None,
             swa_n=swa_n if args.swa else None,
             optimizer=optimizer.state_dict()
         )
- # train_res,
- # test_res,
- # swa_res if args.swa else None,
+
     # print progress
     time_ep = time.time() - time_ep
     values = [epoch + 1, lr, train_res['loss'], train_res['accuracy'], test_res['loss'], test_res['accuracy'], time_ep]
@@ -248,17 +232,102 @@ for epoch in range(start_epoch, args.epochs):
         table = table.split('\n')[2]
     print(table)
 
-
 if args.epochs % args.save_freq != 0:
     utils.save_checkpoint(
         args.dir,
-        epoch + 1,
-      
-        state_dict=model.state_dict(),   
+        args.epochs,
+        state_dict=model.state_dict(),
         swa_state_dict=swa_model.state_dict() if args.swa else None,
         swa_n=swa_n if args.swa else None,
         optimizer=optimizer.state_dict()
     )
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# for epoch in range(start_epoch, args.epochs):
+#     time_ep = time.time()
+
+#     lr = schedule(epoch)
+#     utils.adjust_learning_rate(optimizer, lr)
+#     train_res = utils.train_epoch(loaders['train'], model, criterion, optimizer)
+
+#     # check loss and accuracy on the test set when evaluation frequency is reached and for the final epoch
+#     evaluation_time = epoch == 0 or epoch % args.eval_freq == args.eval_freq - 1 or epoch == args.epochs - 1
+#     if evaluation_time:
+#         test_res = utils.eval(loaders['test'], model, criterion)
+#     else:
+#         test_res = {'loss': None, 'accuracy': None}
+
+#     # when args.swa_c_epochs==1 (the default), the third condition is always true
+#     # compute moving average when in swa mode
+#     time_to_update_swa = args.swa and (epoch + 1) >= args.swa_start and (epoch + 1 - args.swa_start) % args.swa_c_epochs == 0
+#     if time_to_update_swa:
+        
+#         # OLD
+#         # utils.moving_average(swa_model, model, 1.0 / (swa_n + 1))
+#         # swa_n += 1
+        
+#         # ___ our replacement ___
+#         # weighted_moving_average.update(swa_model, model,train_res['accuracy'])
+
+#         time_to_evaluate_swa = epoch == 0 or epoch % args.eval_freq == args.eval_freq - 1 or epoch == args.epochs - 1
+        
+#         if time_to_evaluate_swa:
+#             utils.bn_update(loaders['train'], swa_model)
+#             swa_res = utils.eval(loaders['test'], swa_model, criterion)
+#         else:
+#             swa_res = {'loss': None, 'accuracy': None}
+
+#     if (epoch + 1) % args.save_freq == 0:
+#         utils.save_checkpoint(
+#             args.dir,
+#             epoch + 1,
+           
+#             state_dict=model.state_dict(),   
+#             swa_state_dict=swa_model.state_dict() if args.swa else None,
+#             swa_n=swa_n if args.swa else None,
+#             optimizer=optimizer.state_dict()
+#         )
+#  # train_res,
+#  # test_res,
+#  # swa_res if args.swa else None,
+#     # print progress
+#     time_ep = time.time() - time_ep
+#     values = [epoch + 1, lr, train_res['loss'], train_res['accuracy'], test_res['loss'], test_res['accuracy'], time_ep]
+#     if args.swa:
+#         values = values[:-1] + [swa_res['loss'], swa_res['accuracy']] + values[-1:]
+#     table = tabulate.tabulate([values], columns, tablefmt='simple', floatfmt='8.4f')
+#     if epoch % 40 == 0:
+#         table = table.split('\n')
+#         table = '\n'.join([table[1]] + table)
+#     else:
+#         table = table.split('\n')[2]
+#     print(table)
+
+
+# if args.epochs % args.save_freq != 0:
+#     utils.save_checkpoint(
+#         args.dir,
+#         epoch + 1,
+      
+#         state_dict=model.state_dict(),   
+#         swa_state_dict=swa_model.state_dict() if args.swa else None,
+#         swa_n=swa_n if args.swa else None,
+#         optimizer=optimizer.state_dict()
+#     )
 
   # train_res,
   # test_res,
