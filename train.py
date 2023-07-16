@@ -14,7 +14,7 @@ import tabulate
 
 
 # Bugs
-# our first swa result is always bad
+# our first swa result is always bad. we could remove it
 
 # TODO
 # check if they calculate accuracy correctly
@@ -213,6 +213,7 @@ utils.save_checkpoint(
 
 
 weight_sum=0
+swa_first_iter=True
 
 for epoch in range(start_epoch, args.epochs):
     time_ep = time.time()
@@ -235,10 +236,13 @@ for epoch in range(start_epoch, args.epochs):
         utils.moving_average(swa_model, model, 1.0 / (swa_n + 1))
         
         # our swa
-        # utils.weighted_moving_average.update(our_swa_model, model, train_res['accuracy'])
-        # weighted_moving_average.update(our_swa_model, model, train_res['accuracy'])
         weight_sum+=train_res['accuracy']
-        utils.weighted_moving_average(our_swa_model, model, train_res['accuracy'],weight_sum)
+        if swa_first_iter:
+            utils.moving_average(our_swa_model, model, 1.0 / (swa_n + 1))
+            swa_first_iter=False
+        else:
+            utils.weighted_moving_average(our_swa_model, model, train_res['accuracy'],weight_sum)
+
 
         swa_n += 1
         
