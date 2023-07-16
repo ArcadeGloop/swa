@@ -17,6 +17,7 @@ import tabulate
 
 
 # TODO
+# check if they calculate accuracy correctly
 # change our swa to use validation acc
 # during averaging, first check similarity to new weights, remove outliars.
 # trying using as weight: 
@@ -25,6 +26,8 @@ import tabulate
 
 # Possible Additions
 # add smart swa activation. when variance of validation acc of last few epochs decreases below a threshhold
+# --- and when model doesnt improve on validation for some number of epochs.
+# --- or mean of last 10 epochs hasnt increased much. 
 # investigate model performance peak
 
 
@@ -60,6 +63,7 @@ parser.add_argument('--swa_c_epochs', type=int, default=1, metavar='N',
 
 parser.add_argument('--seed', type=int, default=1, metavar='S', help='random seed (default: 1)')
 
+# our additions
 parser.add_argument('--val_size', type=float, default=0.2, help='validation set size (default: 0.2)')
 
 
@@ -112,7 +116,6 @@ loaders = {
         pin_memory=True
     )
 }
-# num_classes = max(train_set.targets) + 1
 
 print('Preparing model')
 model = model_cfg.base(*model_cfg.args, num_classes=num_classes, **model_cfg.kwargs)
@@ -283,6 +286,25 @@ for epoch in range(start_epoch, args.epochs):
         table = table.split('\n')[2]
     print(table)
 
+
+
+# final test set performance
+utils.bn_update(loaders['train'], swa_model)
+swa_test_res = utils.eval(loaders['test'], swa_model, criterion)
+
+
+# our swa
+utils.bn_update(loaders['train'], our_swa_model)
+our_swa_test_res = utils.eval(loaders['test'], our_swa_model, criterion)
+
+
+# pring test results
+print('__________________________')
+print(f'the test score of the original SWA is: {swa_test_res:.4f}')
+print(f'the test score of our SWA is: {our_swa_test_res:.4f}')
+
+
+
 if args.epochs % args.save_freq != 0:
     utils.save_checkpoint(
         args.dir,
@@ -294,6 +316,10 @@ if args.epochs % args.save_freq != 0:
         swa_res=swa_res if args.swa else None,
         our_swa_res=our_swa_res if args.swa else None,
         our_swa_state_dict=our_swa_model.state_dict() if args.swa else None,
+        
+        # adding test results
+        swa_test_res = swa_test_res,
+        our_swa_test_res=our_swa_test_res,
         
         state_dict=model.state_dict(),
         swa_state_dict=swa_model.state_dict() if args.swa else None,
