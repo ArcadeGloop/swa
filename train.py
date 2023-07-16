@@ -48,7 +48,7 @@ parser.add_argument('--resume', type=str, default=None, metavar='CKPT',
 
 parser.add_argument('--epochs', type=int, default=200, metavar='N', help='number of epochs to train (default: 200)')
 parser.add_argument('--save_freq', type=int, default=1, metavar='N', help='save frequency (default: 1)')
-parser.add_argument('--eval_freq', type=int, default=5, metavar='N', help='evaluation frequency (default: 5)')
+parser.add_argument('--eval_freq', type=int, default=3, metavar='N', help='evaluation frequency (default: 3)')
 parser.add_argument('--lr_init', type=float, default=0.1, metavar='LR', help='initial learning rate (default: 0.01)')
 parser.add_argument('--momentum', type=float, default=0.9, metavar='M', help='SGD momentum (default: 0.9)')
 parser.add_argument('--wd', type=float, default=1e-4, help='weight decay (default: 1e-4)')
@@ -227,6 +227,7 @@ for epoch in range(start_epoch, args.epochs):
         utils.moving_average(swa_model, model, 1.0 / (swa_n + 1))
         
         # our swa
+        # utils.weighted_moving_average.update(our_swa_model, model, train_res['accuracy'])
         weighted_moving_average.update(our_swa_model, model, train_res['accuracy'])
 
         swa_n += 1

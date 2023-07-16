@@ -114,6 +114,13 @@ def moving_average(net1, net2, alpha=1):
         param1.data += param2.data * alpha
 
 
+def weighted_moving_average(net1, net2, weight, weight_sum):
+    for param1, param2 in zip(net1.parameters(), net2.parameters()):
+        param1.data *= weight_sum
+        param1.data += param2.data * weight
+        param1.data/=(weight_sum+weight)
+
+
 class Weighted_Moving_Average(): # our addition
     
     def __init__(self):
@@ -122,13 +129,7 @@ class Weighted_Moving_Average(): # our addition
     def update(self,net1, net2,weight=1):
         
         first_update=self.weight_sum==None
-        
-        if first_update:
-            for param1, param2 in zip(net1.parameters(), net2.parameters()):
-                param1.data = param2.data
-            
-            self.weight_sum=weight
-            
+       
         if not first_update:
             for param1, param2 in zip(net1.parameters(), net2.parameters()):
                 param1.data *= self.weight_sum
@@ -136,6 +137,14 @@ class Weighted_Moving_Average(): # our addition
                 param1.data/=(self.weight_sum+weight)
                 
             self.weight_sum+=weight
+            
+        if first_update:
+            for param1, param2 in zip(net1.parameters(), net2.parameters()):
+                param1.data = param2.data
+            
+            self.weight_sum=weight
+            
+      
             
     def reset(self):
         self.weight_sum=None
