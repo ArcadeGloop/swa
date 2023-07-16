@@ -7,7 +7,7 @@ import torch.nn as nn
 import torchvision.transforms as transforms
 import math
 
-__all__ = ['PreResNet110', 'PreResNet164']
+__all__ = ['PreResNet110', 'PreResNet164','PreResNet38']
 
 
 def conv3x3(in_planes, out_planes, stride=1):
