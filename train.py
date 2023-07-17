@@ -257,11 +257,11 @@ for epoch in range(start_epoch, args.epochs):
         # our swa
         
         if args.use_val_weights:
-            weights= val_res['accuracy']
+            weight= val_res['accuracy']/100
         else:
-            weights= train_res['accuracy']
+            weight= train_res['accuracy']/100
         
-        weight_sum+=weights
+        weight_sum+=weight
         
         if swa_first_iter:
             utils.moving_average(our_swa_model, model, 1.0 / (swa_n + 1))
@@ -269,7 +269,7 @@ for epoch in range(start_epoch, args.epochs):
             
         else: # our swa weighted average, iteration 1+
              
-            utils.weighted_moving_average(our_swa_model, model, weights, weight_sum)
+            utils.weighted_moving_average(our_swa_model, model, weight, weight_sum)
 
 
         swa_n += 1
