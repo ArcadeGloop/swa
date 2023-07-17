@@ -14,15 +14,11 @@ import tabulate
 
 
 # Bugs
-# our first swa result is always bad. we could remove it
+
 
 # TODO
-# during inittialization of swa models. ours should be a copy of theother one
 # check if they calculate accuracy correctly
-# change our swa to use validation acc
-# during averaging, first check similarity to new weights, dont use outliars.
-# trying using as weight: 
-    # plain val_acc, MinMax normalized val_acc, 
+
 
 
 # Possible Additions
@@ -30,6 +26,10 @@ import tabulate
 # --- and when model doesnt improve on validation for some number of epochs.
 # --- or mean of last 10 epochs hasnt increased much. 
 # investigate model performance peak
+# during averaging, first check similarity to new weights, dont use outliars.
+# trying using as weight: 
+    # plain val_acc, MinMax normalized val_acc, 
+
 
 
 
@@ -226,6 +226,7 @@ utils.save_checkpoint(
 
 weight_sum=0
 swa_first_iter=True
+min_weight=0
 
 for epoch in range(start_epoch, args.epochs):
     time_ep = time.time()
@@ -257,15 +258,16 @@ for epoch in range(start_epoch, args.epochs):
         # our swa
         
         if args.use_val_weights:
-            weight= val_res['accuracy']/100
+            weight= (val_res['accuracy']-min_weight)/100
         else:
-            weight= train_res['accuracy']/100
+            weight= (train_res['accuracy']-min_weight)/100
         
         weight_sum+=weight
         
         if swa_first_iter:
             utils.moving_average(our_swa_model, model, 1.0 / (swa_n + 1))
             swa_first_iter=False
+            min_weight=weight*0.9
             
         else: # our swa weighted average, iteration 1+
              
