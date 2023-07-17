@@ -137,10 +137,13 @@ if args.swa:
     swa_model.cuda()
     
     # our model with new averaging
-    # our_swa_model=swa_model.copy()
     our_swa_model = model_cfg.base(*model_cfg.args, num_classes=num_classes, **model_cfg.kwargs)
     our_swa_model.cuda()
+    
+    # copy weights of first model to have same initial start
+    utils.moving_average(our_swa_model,swa_model) 
     swa_n = 0
+    
 else:
     print('SGD training')
 

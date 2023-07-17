@@ -123,7 +123,6 @@ def weighted_moving_average(net1, net2, weight, weight_sum):
 
 
 
-
 def _check_bn(module, flag):
     if issubclass(module.__class__, torch.nn.modules.batchnorm._BatchNorm):
         flag[0] = True
