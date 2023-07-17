@@ -137,20 +137,17 @@ def get_average_function(function_type):
         return exponential_smoothing
 
 
-def get_weight(results,type_of_weight,list_of_scores,minmax_scaled=False):    
-
-    weight= results[type_of_weight]
-    
+def get_weight(base_weight,type_of_weight,list_of_scores,minmax_scaled=False):    
     if type_of_weight=='loss':
-        weight=1/weight
+        base_weight=1/base_weight
     
     if minmax_scaled:
         if list_of_scores is not None:
             maximum=max(list_of_scores)
             minimum=min(list_of_scores)
-            return (weight-minimum)/(maximum-minimum)            
+            return (base_weight-minimum)/(maximum-minimum)            
     
-    return weight
+    return base_weight
     
 
 

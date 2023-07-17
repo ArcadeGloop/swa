@@ -263,13 +263,11 @@ for epoch in range(start_epoch, args.epochs):
         
         # our swa
         if args.use_val_weights: # TODO
-            
-            results=val_res[args.type_of_weight]
-        
+            base_weight=val_res[args.type_of_weight]
         else:
-            results=train_res[args.type_of_weight]
+            base_weight=train_res[args.type_of_weight]
      
-        weight=utils.get_weight(results,args.type_of_weight,list_of_scores, minmax_scaled=args.scale_weights)
+        weight=utils.get_weight(base_weight,args.type_of_weight,list_of_scores, minmax_scaled=args.scale_weights)
       
         list_of_scores.append(weight)
         
