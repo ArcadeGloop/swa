@@ -237,9 +237,9 @@ utils.save_checkpoint(
 
 # weight_sum=0
 swa_first_iter=True
-
-# for weight scaling
 list_of_scores=[]
+
+# TODO add exponential smoothing
 
 for epoch in range(start_epoch, args.epochs):
     time_ep = time.time()
@@ -267,9 +267,10 @@ for epoch in range(start_epoch, args.epochs):
         else:
             base_weight=train_res[args.type_of_weight]
      
-        weight=utils.get_weight(base_weight,args.type_of_weight,list_of_scores, minmax_scaled=args.scale_weights)
+        list_of_scores.append(base_weight)
+
+        weights_to_use=utils.get_weight(base_weight,args.type_of_weight,list_of_scores, minmax_scaled=args.scale_weights)
       
-        list_of_scores.append(weight)
         
                 
         if swa_first_iter:
@@ -278,7 +279,8 @@ for epoch in range(start_epoch, args.epochs):
             
         else: # our swa weighted average, iteration 1+
              
-            utils.weighted_moving_average(our_swa_model, model, weight, sum(list_of_scores))
+            # TODO add exponential smoothing
+            utils.weighted_moving_average(our_swa_model, model, weights_to_use[-1], sum(weights_to_use))
 
 
         swa_n += 1
