@@ -17,6 +17,7 @@ import tabulate
 # our first swa result is always bad. we could remove it
 
 # TODO
+# during inittialization of swa models. ours should be a copy of theother one
 # check if they calculate accuracy correctly
 # change our swa to use validation acc
 # during averaging, first check similarity to new weights, dont use outliars.
@@ -65,9 +66,16 @@ parser.add_argument('--seed', type=int, default=1, metavar='S', help='random see
 
 # our additions
 parser.add_argument('--val_size', type=float, default=0.2, help='validation set size (default: 0.2)')
+parser.add_argument('--use_val_weights', type=bool, default=True, help='whether to use validation weights for our swa (default: True)')
+
 
 
 args = parser.parse_args()
+
+# might not work
+if args.use_val_weights:
+    args.eval_freq=1
+
 
 print('Preparing directory %s' % args.dir)
 os.makedirs(args.dir, exist_ok=True)
@@ -129,6 +137,7 @@ if args.swa:
     swa_model.cuda()
     
     # our model with new averaging
+    # our_swa_model=swa_model.copy()
     our_swa_model = model_cfg.base(*model_cfg.args, num_classes=num_classes, **model_cfg.kwargs)
     our_swa_model.cuda()
     swa_n = 0
@@ -223,7 +232,8 @@ for epoch in range(start_epoch, args.epochs):
     train_res = utils.train_epoch(loaders['train'], model, criterion, optimizer)
 
     # check loss and accuracy on the test set when evaluation frequency is reached and for the final epoch
-    if epoch == 0 or epoch % args.eval_freq == args.eval_freq - 1 or epoch == args.epochs - 1:
+    # CHANGED: only validate during SWA
+    if args.swa and epoch == 0 or epoch % args.eval_freq == args.eval_freq - 1 or epoch == args.epochs - 1:
         val_res = utils.eval(loaders['validation'], model, criterion)
     else:
         val_res = {'loss': None, 'accuracy': None}
@@ -240,8 +250,16 @@ for epoch in range(start_epoch, args.epochs):
         if swa_first_iter:
             utils.moving_average(our_swa_model, model, 1.0 / (swa_n + 1))
             swa_first_iter=False
+            
         else:
-            utils.weighted_moving_average(our_swa_model, model, train_res['accuracy'],weight_sum)
+            
+            if args.use_val_weights:
+                
+                weights= val_res['accuracy']
+            else:
+                weights= train_res['accuracy']
+                
+            utils.weighted_moving_average(our_swa_model, model, train_res['accuracy'], weight_sum)
 
 
         swa_n += 1
