@@ -67,7 +67,7 @@ parser.add_argument('--seed', type=int, default=1, metavar='S', help='random see
 
 # our additions
 parser.add_argument('--val_size', type=float, default=0.2, help='validation set size (default: 0.2)')
-parser.add_argument('--use_val_weights', type=bool, default=True, help='whether to use validation weights for our swa (default: True)')
+parser.add_argument('--weight_from_data', type=str, default='validation', help='whether to use validation or train weights for our swa (default: validation)')
 parser.add_argument('--type_of_weight', type=str, default='accuracy', help='type of weight to use, loss and accuracy (default: accuracy)')
 parser.add_argument('--type_of_average', type=str, default='weighted_moving_average', help='type of averaging to use (default: weighted_moving_average)')
 parser.add_argument('--scale_weights', type=bool, default=False, help='whether to use MinMax scaling (default: False)')
@@ -148,9 +148,6 @@ if args.swa:
     # copy weights of first model to have same initial start
     utils.moving_average(our_swa_model,swa_model) 
     swa_n = 0
-    
-    
-    
     
 else:
     print('SGD training')
@@ -235,11 +232,14 @@ utils.save_checkpoint(
 
 # _______________ TRAINING STARTS HERE _______________
 
-# weight_sum=0
+weight_sum=0
 swa_first_iter=True
-list_of_scores=[]
-
+# list_of_scores=[]
+results={}
+minimum_weight=0
 # TODO add exponential smoothing
+# averaging_function = getattr(utils, args.type_of_average)
+
 
 for epoch in range(start_epoch, args.epochs):
     time_ep = time.time()
@@ -247,6 +247,7 @@ for epoch in range(start_epoch, args.epochs):
     lr = schedule(epoch)
     utils.adjust_learning_rate(optimizer, lr)
     train_res = utils.train_epoch(loaders['train'], model, criterion, optimizer)
+    results.update({'train':train_res})    
 
     # when args.swa_c_epochs==1 (the default), the third condition is always true
     # compute moving average when in swa mode
@@ -257,30 +258,36 @@ for epoch in range(start_epoch, args.epochs):
             val_res = utils.eval(loaders['validation'], model, criterion)
         else:
             val_res = {'loss': None, 'accuracy': None}
-            
+        
+        results.update({'validation':train_res})    
+
         # original swa
         utils.moving_average(swa_model, model, 1.0 / (swa_n + 1))
         
         # our swa
-        if args.use_val_weights: # TODO
-            base_weight=val_res[args.type_of_weight]
-        else:
-            base_weight=train_res[args.type_of_weight]
-     
-        list_of_scores.append(base_weight)
+        base_weight=results[args.weight_from_data][args.type_of_weight]
 
-        weights_to_use=utils.get_weight(base_weight,args.type_of_weight,list_of_scores, minmax_scaled=args.scale_weights)
+        # list_of_scores.append(base_weight)
+
+        weight=utils.get_weight(base_weight, args.type_of_weight, minimum_weight, scale=args.scale_weights)
       
         
                 
         if swa_first_iter:
+            # copy the weights on first iteration
             utils.moving_average(our_swa_model, model, 1.0 / (swa_n + 1))
             swa_first_iter=False
+            minimum_weight=weight*0.9
+            weight_sum+=weight
             
         else: # our swa weighted average, iteration 1+
              
             # TODO add exponential smoothing
-            utils.weighted_moving_average(our_swa_model, model, weights_to_use[-1], sum(weights_to_use))
+            # utils.weighted_moving_average(our_swa_model, model, weights_to_use[-1], sum(weights_to_use))
+            if (args.type_of_average=='weighted_moving_average'):
+                utils.weighted_moving_average(our_swa_model, model, weight)
+            if (args.type_of_average=='exponential_smoothing'):
+                utils.exponential_smoothing(our_swa_model, model, 0.1)
 
 
         swa_n += 1
