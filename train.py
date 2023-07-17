@@ -236,15 +236,21 @@ for epoch in range(start_epoch, args.epochs):
 
     # check loss and accuracy on the test set when evaluation frequency is reached and for the final epoch
     # CHANGED: only validate during SWA
-    if args.swa and epoch == 0 or epoch % args.eval_freq == args.eval_freq - 1 or epoch == args.epochs - 1:
-        val_res = utils.eval(loaders['validation'], model, criterion)
-    else:
-        val_res = {'loss': None, 'accuracy': None}
+    # if epoch == 0 or epoch % args.eval_freq == args.eval_freq - 1 or epoch == args.epochs - 1:
+    #     val_res = utils.eval(loaders['validation'], model, criterion)
+    # else:
+    #     val_res = {'loss': None, 'accuracy': None}
 
     # when args.swa_c_epochs==1 (the default), the third condition is always true
     # compute moving average when in swa mode
     if args.swa and (epoch + 1) >= args.swa_start and (epoch + 1 - args.swa_start) % args.swa_c_epochs == 0:
         
+        # evaluate running model
+        if epoch == 0 or epoch % args.eval_freq == args.eval_freq - 1 or epoch == args.epochs - 1:
+            val_res = utils.eval(loaders['validation'], model, criterion)
+        else:
+            val_res = {'loss': None, 'accuracy': None}
+            
         # original swa
         utils.moving_average(swa_model, model, 1.0 / (swa_n + 1))
         
@@ -254,7 +260,7 @@ for epoch in range(start_epoch, args.epochs):
             utils.moving_average(our_swa_model, model, 1.0 / (swa_n + 1))
             swa_first_iter=False
             
-        else:
+        else: # our swa weighted average, iteration 2+
             
             if args.use_val_weights:
                 
@@ -262,7 +268,7 @@ for epoch in range(start_epoch, args.epochs):
             else:
                 weights= train_res['accuracy']
                 
-            utils.weighted_moving_average(our_swa_model, model, train_res['accuracy'], weight_sum)
+            utils.weighted_moving_average(our_swa_model, model, weights, weight_sum)
 
 
         swa_n += 1
