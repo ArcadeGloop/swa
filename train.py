@@ -11,12 +11,13 @@ import tabulate
 
 # Notes
 # experiment 1: !python3 swa/train.py --dir=training_dir --dataset=CIFAR10 --data_path=data  --model=PreResNet14 --epochs=150 --lr_init=0.1 --wd=3e-4 --swa --swa_start=100 --swa_lr=0.05 --save_freq=1 # SWA 1.5 Budgets
-
+# train model for 150 epochs. save all checkpoints. then wen doing swa, load that final model and continue
 
 # Bugs
 
 
 # TODO
+# add different weight configurations (min max sacled acc, acc, inverse  min_max_scaled loss)
 # check if they calculate accuracy correctly
 
 
@@ -67,12 +68,14 @@ parser.add_argument('--seed', type=int, default=1, metavar='S', help='random see
 # our additions
 parser.add_argument('--val_size', type=float, default=0.2, help='validation set size (default: 0.2)')
 parser.add_argument('--use_val_weights', type=bool, default=True, help='whether to use validation weights for our swa (default: True)')
-
+parser.add_argument('--type_of_weight', type=str, default='accuracy', help='type of weight to use, loss and accuracy (default: accuracy)')
+parser.add_argument('--type_of_average', type=str, default='weighted_moving_average', help='type of averaging to use (default: weighted_moving_average)')
+parser.add_argument('--scale_weights', type=bool, default=False, help='whether to use MinMax scaling (default: False)')
 
 
 args = parser.parse_args()
 
-# might not work
+
 if args.use_val_weights:
     args.eval_freq=1
 
@@ -139,10 +142,15 @@ if args.swa:
     # our model with new averaging
     our_swa_model = model_cfg.base(*model_cfg.args, num_classes=num_classes, **model_cfg.kwargs)
     our_swa_model.cuda()
+    # weight_function=get_weight_function(args.weight_config)
+
     
     # copy weights of first model to have same initial start
     utils.moving_average(our_swa_model,swa_model) 
     swa_n = 0
+    
+    
+    
     
 else:
     print('SGD training')
@@ -224,9 +232,14 @@ utils.save_checkpoint(
 )
 
 
-weight_sum=0
+
+# _______________ TRAINING STARTS HERE _______________
+
+# weight_sum=0
 swa_first_iter=True
-min_weight=0
+
+# for weight scaling
+list_of_scores=[]
 
 for epoch in range(start_epoch, args.epochs):
     time_ep = time.time()
@@ -235,18 +248,11 @@ for epoch in range(start_epoch, args.epochs):
     utils.adjust_learning_rate(optimizer, lr)
     train_res = utils.train_epoch(loaders['train'], model, criterion, optimizer)
 
-    # check loss and accuracy on the test set when evaluation frequency is reached and for the final epoch
-    # CHANGED: only validate during SWA
-    # if epoch == 0 or epoch % args.eval_freq == args.eval_freq - 1 or epoch == args.epochs - 1:
-    #     val_res = utils.eval(loaders['validation'], model, criterion)
-    # else:
-    #     val_res = {'loss': None, 'accuracy': None}
-
     # when args.swa_c_epochs==1 (the default), the third condition is always true
     # compute moving average when in swa mode
     if args.swa and (epoch + 1) >= args.swa_start and (epoch + 1 - args.swa_start) % args.swa_c_epochs == 0:
         
-        # evaluate running model
+        # check loss and accuracy on the validation set when evaluation frequency is reached and for the final epoch
         if epoch == 0 or epoch % args.eval_freq == args.eval_freq - 1 or epoch == args.epochs - 1:
             val_res = utils.eval(loaders['validation'], model, criterion)
         else:
@@ -256,32 +262,35 @@ for epoch in range(start_epoch, args.epochs):
         utils.moving_average(swa_model, model, 1.0 / (swa_n + 1))
         
         # our swa
+        if args.use_val_weights: # TODO
+            
+            results=val_res[args.type_of_weight]
         
-        if args.use_val_weights:
-            weight= (val_res['accuracy']-min_weight)/100
         else:
-            weight= (train_res['accuracy']-min_weight)/100
+            results=train_res[args.type_of_weight]
+     
+        weight=utils.get_weight(results,args.type_of_weight,list_of_scores, minmax_scaled=args.scale_weights)
+      
+        list_of_scores.append(weight)
         
-        weight_sum+=weight
-        
+                
         if swa_first_iter:
             utils.moving_average(our_swa_model, model, 1.0 / (swa_n + 1))
             swa_first_iter=False
-            min_weight=weight*0.9
             
         else: # our swa weighted average, iteration 1+
              
-            utils.weighted_moving_average(our_swa_model, model, weight, weight_sum)
+            utils.weighted_moving_average(our_swa_model, model, weight, sum(list_of_scores))
 
 
         swa_n += 1
         
         if epoch == 0 or epoch % args.eval_freq == args.eval_freq - 1 or epoch == args.epochs - 1:
-            utils.bn_update(loaders['train'], swa_model)
+            # utils.bn_update(loaders['train'], swa_model)
             swa_res = utils.eval(loaders['validation'], swa_model, criterion)
             
             # our swa
-            utils.bn_update(loaders['train'], our_swa_model)
+            # utils.bn_update(loaders['train'], our_swa_model)
             our_swa_res = utils.eval(loaders['validation'], our_swa_model, criterion)
 
         else:
@@ -312,7 +321,7 @@ for epoch in range(start_epoch, args.epochs):
     if args.swa:
         values = values[:-1] + [swa_res['loss'], swa_res['accuracy'], our_swa_res['loss'], our_swa_res['accuracy'] ] + values[-1:]
     table = tabulate.tabulate([values], columns, tablefmt='simple', floatfmt='8.4f')
-    if epoch % 40 == 0:
+    if epoch % 25 == 0:
         table = table.split('\n')
         table = '\n'.join([table[1]] + table)
     else:
@@ -320,15 +329,16 @@ for epoch in range(start_epoch, args.epochs):
     print(table)
 
 
+if args.swa:
+    # final test set performance
+    # utils.bn_update(loaders['train'], swa_model)
+    swa_test_res = utils.eval(loaders['test'], swa_model, criterion)
+    
+    
+    # our swa
+    # utils.bn_update(loaders['train'], our_swa_model)
+    our_swa_test_res = utils.eval(loaders['test'], our_swa_model, criterion)
 
-# final test set performance
-utils.bn_update(loaders['train'], swa_model)
-swa_test_res = utils.eval(loaders['test'], swa_model, criterion)
-
-
-# our swa
-utils.bn_update(loaders['train'], our_swa_model)
-our_swa_test_res = utils.eval(loaders['test'], our_swa_model, criterion)
 
 
 # pring test results
