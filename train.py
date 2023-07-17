@@ -76,7 +76,7 @@ parser.add_argument('--scale_weights', type=bool, default=False, help='whether t
 args = parser.parse_args()
 
 
-if args.use_val_weights:
+if args.weight_from_data=='validation':
     args.eval_freq=1
 
 
