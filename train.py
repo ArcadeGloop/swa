@@ -284,11 +284,11 @@ for epoch in range(start_epoch, args.epochs):
         swa_n += 1
         
         if epoch == 0 or epoch % args.eval_freq == args.eval_freq - 1 or epoch == args.epochs - 1:
-            # utils.bn_update(loaders['train'], swa_model)
+            utils.bn_update(loaders['train'], swa_model)
             swa_res = utils.eval(loaders['validation'], swa_model, criterion)
             
             # our swa
-            # utils.bn_update(loaders['train'], our_swa_model)
+            utils.bn_update(loaders['train'], our_swa_model)
             our_swa_res = utils.eval(loaders['validation'], our_swa_model, criterion)
 
         else:
@@ -329,12 +329,12 @@ for epoch in range(start_epoch, args.epochs):
 
 if args.swa:
     # final test set performance
-    # utils.bn_update(loaders['train'], swa_model)
+    utils.bn_update(loaders['train'], swa_model)
     swa_test_res = utils.eval(loaders['test'], swa_model, criterion)
     
     
     # our swa
-    # utils.bn_update(loaders['train'], our_swa_model)
+    utils.bn_update(loaders['train'], our_swa_model)
     our_swa_test_res = utils.eval(loaders['test'], our_swa_model, criterion)
 
 
