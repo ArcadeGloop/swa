@@ -142,7 +142,7 @@ def get_weight(base_weight,type_of_weight,list_of_scores,minmax_scaled=False):
         base_weight=1/base_weight
     
     if minmax_scaled:
-        if list_of_scores:
+        if len(list_of_scores)>5:
             maximum=max(list_of_scores)
             minimum=min(list_of_scores)
             return (base_weight-minimum)/(maximum-minimum)            
