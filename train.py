@@ -255,19 +255,20 @@ for epoch in range(start_epoch, args.epochs):
         utils.moving_average(swa_model, model, 1.0 / (swa_n + 1))
         
         # our swa
-        weight_sum+=train_res['accuracy']
+        
+        if args.use_val_weights:
+            weights= val_res['accuracy']
+        else:
+            weights= train_res['accuracy']
+        
+        weight_sum+=weights
+        
         if swa_first_iter:
             utils.moving_average(our_swa_model, model, 1.0 / (swa_n + 1))
             swa_first_iter=False
             
-        else: # our swa weighted average, iteration 2+
-            
-            if args.use_val_weights:
-                
-                weights= val_res['accuracy']
-            else:
-                weights= train_res['accuracy']
-                
+        else: # our swa weighted average, iteration 1+
+             
             utils.weighted_moving_average(our_swa_model, model, weights, weight_sum)
 
 
