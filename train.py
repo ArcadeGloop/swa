@@ -17,6 +17,9 @@ import tabulate
 
 
 # TODO
+# start with experiment 3 to find best configuration of weights
+# then do experiment 2. implement a cycle during swa. for each cycle, continue from best performing model
+
 # add different weight configurations (min max sacled acc, acc, inverse  min_max_scaled loss)
 # check if they calculate accuracy correctly
 
@@ -31,7 +34,8 @@ import tabulate
 # trying using as weight: 
     # plain val_acc, MinMax normalized val_acc, 
 
-
+# Questions we could answer
+# how man swa epochs does it take to reach the local minimum
 
 
 
@@ -71,6 +75,7 @@ parser.add_argument('--weight_from_data', type=str, default='validation', help='
 parser.add_argument('--type_of_weight', type=str, default='accuracy', help='type of weight to use, loss and accuracy (default: accuracy)')
 parser.add_argument('--type_of_average', type=str, default='weighted_moving_average', help='type of averaging to use (default: weighted_moving_average)')
 parser.add_argument('--scale_weights', type=bool, default=False, help='whether to use MinMax scaling (default: False)')
+parser.add_argument('--smoothing_factor', type=float, default=0.1, help='smoothing factor to be used for exponential smoothing (default: 0.1)')
 
 
 args = parser.parse_args()
@@ -285,9 +290,9 @@ for epoch in range(start_epoch, args.epochs):
             # TODO add exponential smoothing
             # utils.weighted_moving_average(our_swa_model, model, weights_to_use[-1], sum(weights_to_use))
             if (args.type_of_average=='weighted_moving_average'):
-                utils.weighted_moving_average(our_swa_model, model, weight)
+                utils.weighted_moving_average(our_swa_model, model, weight,weight_sum)
             if (args.type_of_average=='exponential_smoothing'):
-                utils.exponential_smoothing(our_swa_model, model, 0.1)
+                utils.exponential_smoothing(our_swa_model, model, args.smoothing_factor)
 
 
         swa_n += 1
