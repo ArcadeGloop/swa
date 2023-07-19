@@ -51,8 +51,8 @@ parser.add_argument('--seed', type=int, default=1, metavar='S', help='random see
 parser.add_argument('--val_size', type=float, default=0.2, help='validation set size (default: 0.2)')
 parser.add_argument('--alpha', type=float, default=0.3, help='smoothing factor to be used for exponential smoothing (default: 0.3)')
 parser.add_argument('--swa_duration', type=int, default=5, help='duration of SWA (default: 5)')
-parser.add_argument('--trigger', type=float, default=-0.02, help='smoothed average of loss difference to trigger SWA start (default: -C:/Users/alexy/Downloads/triangulation_checkpoints/training_dir/checkpoint-18.pt)')
-parser.add_argument('--decrease', type=float, default=0.8, help='decrease learning rate after SWA (default: 0.8)')
+parser.add_argument('--trigger', type=float, default=-0.02, help='smoothed average of loss difference to trigger SWA start (-0.02)')
+parser.add_argument('--decrease', type=float, default=0.5, help='decrease learning rate after SWA (default: 0.5)')
 
 
 
@@ -205,6 +205,8 @@ for epoch in range(start_epoch, args.epochs):
         # stop swa
         swa_mode=False
         swa_n=0
+        train_val_loss_diff=1
+
         
         # continue training the swa model
         utils.moving_average(model, swa_model, 1.0) 
