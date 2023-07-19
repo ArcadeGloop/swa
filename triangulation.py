@@ -118,9 +118,9 @@ swa_model.cuda()
 
 
 print('SWA triangulation training')
-print(f'SWA will be triggered when loss difference reaches: {}')
-print(f'SWA will run for {} epochs')
-print(f'learning rate will decrease by: {}')
+print(f'SWA will be triggered when loss difference reaches: {args.trigger}')
+print(f'SWA will run for {args.swa_duration} epochs')
+print(f'learning rate will decrease by: {args.decrease}')
 
 
 criterion = F.cross_entropy
@@ -164,7 +164,6 @@ utils.save_checkpoint(
 # _______________ TRAINING STARTS HERE _______________
 
 
-train_val_loss_diff=0
 
 lr=args.lr_init
 
@@ -172,7 +171,7 @@ swa_mode=False
 
 swa_n=0
 
-train_val_loss_diff=0
+train_val_loss_diff=2
 
 for epoch in range(start_epoch, args.epochs):
     time_ep = time.time()
