@@ -122,7 +122,7 @@ print(f'SWA will be triggered when loss difference reaches: {args.trigger}')
 print(f'SWA will run for {args.swa_duration} epochs')
 print(f'learning rate will decrease by: {args.decrease}')
 
-train_val_loss_diff=2
+train_val_loss_diff=1
 
 
 criterion = F.cross_entropy
