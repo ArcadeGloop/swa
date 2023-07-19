@@ -122,6 +122,8 @@ print(f'SWA will be triggered when loss difference reaches: {args.trigger}')
 print(f'SWA will run for {args.swa_duration} epochs')
 print(f'learning rate will decrease by: {args.decrease}')
 
+train_val_loss_diff=2
+
 
 criterion = F.cross_entropy
 optimizer = torch.optim.SGD(
@@ -136,6 +138,7 @@ if args.resume is not None:
     print('Resume training from %s' % args.resume)
     checkpoint = torch.load(args.resume)
     start_epoch = checkpoint['epoch']
+    train_val_loss_diff=train_val_loss_diff,
     model.load_state_dict(checkpoint['state_dict'])
     optimizer.load_state_dict(checkpoint['optimizer'])
     
@@ -147,6 +150,8 @@ train_res = {'loss': None, 'accuracy': None}
 val_res = {'loss': None, 'accuracy': None}
 
 
+
+
 utils.save_checkpoint(
     args.dir,
     start_epoch,
@@ -154,7 +159,8 @@ utils.save_checkpoint(
     # our additions
     train_res=train_res,
     val_res=val_res,
-  
+    train_val_loss_diff=train_val_loss_diff,
+    
     state_dict=model.state_dict(),   
     optimizer=optimizer.state_dict()
 )
@@ -171,7 +177,6 @@ swa_mode=False
 
 swa_n=0
 
-train_val_loss_diff=2
 
 for epoch in range(start_epoch, args.epochs):
     time_ep = time.time()
@@ -220,7 +225,8 @@ for epoch in range(start_epoch, args.epochs):
             # our additions
             train_res=train_res,
             val_res=val_res,
-          
+            train_val_loss_diff=train_val_loss_diff,
+
             state_dict=model.state_dict(),
             optimizer=optimizer.state_dict()
         )
@@ -260,7 +266,8 @@ if args.epochs % args.save_freq != 0:
         # our additions
         train_res=train_res,
         val_res=val_res,        
-      
+        train_val_loss_diff=train_val_loss_diff,
+        
         state_dict=model.state_dict(),
         optimizer=optimizer.state_dict()
     )
