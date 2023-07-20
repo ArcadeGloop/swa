@@ -8,6 +8,7 @@ import torchvision
 # import models
 import t_utils as utils
 import tabulate
+import torch.nn as nn
 
 # Bugs
 
@@ -116,12 +117,14 @@ device=torch.device(args.device)
 
 
 print('Preparing model')
-model=torchvision.models.efficientnet_v2_s()
+model=torchvision.models.efficientnet_v2_s(weights=None)
+model = nn.Sequential(model, nn.Dropout(p=0.4, inplace=False), nn.Linear(1000,10))
 model.to(device)
 
 
 # swa model 
-swa_model=torchvision.models.efficientnet_v2_s()
+swa_model=torchvision.models.efficientnet_v2_s(weights=None)
+swa_model = nn.Sequential(swa_model, nn.Dropout(p=0.4, inplace=False), nn.Linear(1000,10))
 swa_model.to(device)
 
 
