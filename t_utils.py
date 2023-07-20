@@ -77,11 +77,11 @@ def train_epoch(loader, model, criterion, optimizer, device):
         _, predicted = torch.max(output.data, 1)
         loss_sum += loss.data * inputs.size(0)
         pred = output.data.max(1, keepdim=True)[1]
-        correct += (pred == target).sum().item()
+        correct += pred.eq(target.data.view_as(pred)).sum().item()
 
     return {
         'loss': loss_sum / len(loader.dataset),
-        'accuracy': correct / len(loader.dataset),
+        'accuracy': correct / len(loader.dataset) * 100.0,
     }
 
 
@@ -105,11 +105,11 @@ def eval(loader, model, criterion,device):
             _, predicted = torch.max(output.data, 1)
             loss_sum += loss.data * inputs.size(0)
             pred = output.data.max(1, keepdim=True)[1]
-            correct += (pred == target).sum().item()
+            correct += pred.eq(target.data.view_as(pred)).sum().item()
     
         return {
             'loss': loss_sum / len(loader.dataset),
-            'accuracy': correct / len(loader.dataset),
+        'accuracy': correct / len(loader.dataset) * 100.0,
         }
 
 
