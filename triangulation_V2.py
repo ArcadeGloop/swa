@@ -111,6 +111,7 @@ loaders = {
     )
 }
 
+print(f'training on: {args.device}')
 device=torch.device(args.device)
 
 

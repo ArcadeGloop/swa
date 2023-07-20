@@ -81,7 +81,7 @@ def train_epoch(loader, model, criterion, optimizer, device):
 
     return {
         'loss': loss_sum / len(loader.dataset),
-        'accuracy': correct / len(loader.dataset) * 100.0,
+        'accuracy': correct / len(loader.dataset),
     }
 
 
@@ -109,7 +109,7 @@ def eval(loader, model, criterion,device):
     
         return {
             'loss': loss_sum / len(loader.dataset),
-            'accuracy': correct / len(loader.dataset) * 100.0,
+            'accuracy': correct / len(loader.dataset),
         }
 
 
