@@ -53,11 +53,18 @@ parser.add_argument('--alpha', type=float, default=0.3, help='smoothing factor t
 parser.add_argument('--swa_duration', type=int, default=5, help='duration of SWA (default: 5)')
 parser.add_argument('--trigger', type=float, default=-0.02, help='smoothed average of loss difference to trigger SWA start (-0.02)')
 parser.add_argument('--decrease', type=float, default=0.5, help='decrease learning rate after SWA (default: 0.5)')
+parser.add_argument('--device', type=str, default='cuda', help='device to train on, cuda or cpu (default: cuda)')
 
 
 
 
 args = parser.parse_args()
+
+
+if args.device=='cuda':
+    device=torch.device('cuda:0')
+else:
+    device='cpu'
 
 
 print('Preparing directory %s' % args.dir)
@@ -109,12 +116,12 @@ loaders = {
 
 print('Preparing model')
 model = model_cfg.base(*model_cfg.args, num_classes=num_classes, **model_cfg.kwargs)
-model.cuda()
+model.to(device)
 
 
 # swa model 
 swa_model = model_cfg.base(*model_cfg.args, num_classes=num_classes, **model_cfg.kwargs)
-swa_model.cuda()
+swa_model.to(device)
 
 
 print('SWA triangulation training')
