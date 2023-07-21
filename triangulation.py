@@ -134,7 +134,10 @@ print('SWAT-SGD training')
 # print(f'SWA will be triggered when loss difference reaches: {args.trigger}')
 print(f'SGD will run for {args.sgd_duration} epochs')
 print(f'SWA will run for {args.swa_duration} epochs')
-print(f'learning rate will decrease by: {args.decrease}')
+print(f'learning rate will decrease according to original schedule')
+
+# print(f'learning rate will decrease by: {args.decrease}')
+
 
 # train_val_loss_diff=args.difference_init
 
@@ -142,8 +145,8 @@ print(f'learning rate will decrease by: {args.decrease}')
 def schedule(epoch):
     t = (epoch) / (args.epochs)
     lr_ratio = 0.01
-    if t <= 0.5: # for half of the training cycle, we dont change the default learning rate
-        factor = 1.0
+    # if t <= 0.5: # for half of the training cycle, we dont change the default learning rate
+    #     factor = 1.0
     elif t <= 0.9: # then until there's 10% of the iterations left, we linearly decay the LR per cycle 
         factor = 1.0 - (1.0 - lr_ratio) * (t - 0.5) / 0.4
     else: # in SWA mode: last 10% of training time will use the swa learning rate, in SGD: 1% of the initial learning rate
