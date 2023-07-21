@@ -235,7 +235,7 @@ for epoch in range(start_epoch, args.epochs):
             train_res=train_res,
             val_res=val_res,
             # train_val_loss_diff=train_val_loss_diff,
-            lr=optimizer.param_groups[0]['lr']
+            lr=optimizer.param_groups[0]['lr'],
 
             state_dict=model.state_dict(),
             optimizer=optimizer.state_dict()
@@ -297,6 +297,8 @@ if args.epochs % args.save_freq != 0:
         train_res=train_res,
         val_res=val_res,        
         # train_val_loss_diff=train_val_loss_diff,
+        lr=optimizer.param_groups[0]['lr'],
+
         
         state_dict=model.state_dict(),
         optimizer=optimizer.state_dict()
