@@ -147,7 +147,7 @@ def schedule(epoch):
     lr_ratio = 0.01
     # if t <= 0.5: # for half of the training cycle, we dont change the default learning rate
     #     factor = 1.0
-    elif t <= 0.9: # then until there's 10% of the iterations left, we linearly decay the LR per cycle 
+    if t <= 0.9: # then until there's 10% of the iterations left, we linearly decay the LR per cycle 
         factor = 1.0 - (1.0 - lr_ratio) * (t - 0.5) / 0.4
     else: # in SWA mode: last 10% of training time will use the swa learning rate, in SGD: 1% of the initial learning rate
         factor = lr_ratio
