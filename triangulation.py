@@ -9,10 +9,14 @@ import models
 import utils
 import tabulate
 
-# Bugs
+# Notes
+
 
 
 # TODO
+# if best model doesnt improve for X epochs, reset learning rate cycle
+# start swa at first when loss decrease slows down compared to how it started. 
+# then average only the best performing models. not just consecutive models. 
 # could add online bayesian optimisation for hyperparam tuning, 
 # each time for increasing number of epochs.
 
@@ -135,6 +139,17 @@ print(f'learning rate will decrease by: {args.decrease}')
 # train_val_loss_diff=args.difference_init
 
 
+def schedule(epoch):
+    t = (epoch) / (args.epochs)
+    lr_ratio = 0.01
+    if t <= 0.5: # for half of the training cycle, we dont change the default learning rate
+        factor = 1.0
+    elif t <= 0.9: # then until there's 10% of the iterations left, we linearly decay the LR per cycle 
+        factor = 1.0 - (1.0 - lr_ratio) * (t - 0.5) / 0.4
+    else: # in SWA mode: last 10% of training time will use the swa learning rate, in SGD: 1% of the initial learning rate
+        factor = lr_ratio
+    return args.lr_init * factor
+
 criterion = F.cross_entropy
 optimizer = torch.optim.SGD(
     model.parameters(),
@@ -210,27 +225,6 @@ for epoch in range(start_epoch, args.epochs):
         utils.moving_average(swa_model, model, 1.0 / (swa_n + 1))
         swa_n+=1
         
-        
-    if swa_n >= args.swa_duration:
-        
-        # stop swa
-        swa_mode=False
-        swa_n=0
-        # train_val_loss_diff=args.difference_init/(epoch+1)
-
-        #copy swa model weights to the model we train
-        # continue training the swa model
-        utils.moving_average(model, swa_model, 1.0) 
-        
-        # reduce learning rate
-        lr = optimizer.param_groups[0]['lr']*args.decrease
-        # lr = args.lr_init/(epoch+1)
-        utils.adjust_learning_rate(optimizer, lr)
-
-    
-
-        
-        
 
     if (epoch + 1) % args.save_freq == 0:
         utils.save_checkpoint(
@@ -241,6 +235,7 @@ for epoch in range(start_epoch, args.epochs):
             train_res=train_res,
             val_res=val_res,
             # train_val_loss_diff=train_val_loss_diff,
+            lr=optimizer.param_groups[0]['lr']
 
             state_dict=model.state_dict(),
             optimizer=optimizer.state_dict()
@@ -257,6 +252,26 @@ for epoch in range(start_epoch, args.epochs):
     else:
         table = table.split('\n')[2]
     print(table)
+    
+          
+    if swa_n >= args.swa_duration:
+        
+        # stop swa
+        swa_mode=False
+        swa_n=0
+        # train_val_loss_diff=args.difference_init/(epoch+1)
+
+        #copy swa model weights to the model we train
+        # continue training the swa model
+        utils.moving_average(model, swa_model, 1.0) 
+        
+        # reduce learning rate
+        lr = schedule(epoch)
+        # lr = optimizer.param_groups[0]['lr']*args.decrease
+        # lr = args.lr_init/(epoch+1)
+        utils.adjust_learning_rate(optimizer, lr)
+
+    
 
 
 
@@ -268,8 +283,8 @@ test_res = utils.eval(loaders['test'], model, criterion)
 # pring test results
 
 print('__________________________')
-print(f'the test accuracy of the original SWA is: {test_res["accuracy"]:.4f}')
-print(f'the test accuracy of our SWA is: {test_res["accuracy"]:.4f}')
+# print(f'the test accuracy of the original SWA is: {test_res["accuracy"]:.4f}')
+print(f'the test accuracy is: {test_res["accuracy"]:.4f}')
 
 
 
