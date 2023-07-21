@@ -49,12 +49,15 @@ parser.add_argument('--seed', type=int, default=1, metavar='S', help='random see
 
 # our additions
 parser.add_argument('--val_size', type=float, default=0.2, help='validation set size (default: 0.2)')
-parser.add_argument('--alpha', type=float, default=0.3, help='smoothing factor to be used for exponential smoothing (default: 0.3)')
 parser.add_argument('--swa_duration', type=int, default=5, help='duration of SWA (default: 5)')
-parser.add_argument('--trigger', type=float, default=-0.02, help='smoothed average of loss difference to trigger SWA start (-0.02)')
-parser.add_argument('--decrease', type=float, default=0.5, help='decrease learning rate after SWA (default: 0.5)')
 parser.add_argument('--device', type=str, default='cuda', help='device to train on, cuda or cpu (default: cuda)')
-parser.add_argument('--difference_init', type=float, default=1.0, help='W0 for exponenential smoothing (default: 1.0)')
+parser.add_argument('--sgd_duration', type=int, default=10, help='duration of SGD (default: 10)')
+parser.add_argument('--decrease', type=float, default=0.9, help='multiply learning rate by this value after SWA (default: 0.9)')
+
+
+# parser.add_argument('--trigger', type=float, default=-0.02, help='smoothed average of loss difference to trigger SWA start (-0.02)')
+# parser.add_argument('--difference_init', type=float, default=1.0, help='W0 for exponenential smoothing (default: 1.0)')
+# parser.add_argument('--alpha', type=float, default=0.3, help='smoothing factor to be used for exponential smoothing (default: 0.3)')
 
 
 
@@ -123,8 +126,9 @@ swa_model = model_cfg.base(*model_cfg.args, num_classes=num_classes, **model_cfg
 swa_model.to(device)
 
 
-print('SWA triangulation training')
-print(f'SWA will be triggered when loss difference reaches: {args.trigger}')
+print('SWAT-SGD training')
+# print(f'SWA will be triggered when loss difference reaches: {args.trigger}')
+print(f'SGD will run for {args.sgd_duration} epochs')
 print(f'SWA will run for {args.swa_duration} epochs')
 print(f'learning rate will decrease by: {args.decrease}')
 
@@ -219,8 +223,8 @@ for epoch in range(start_epoch, args.epochs):
         utils.moving_average(model, swa_model, 1.0) 
         
         # reduce learning rate
-        # lr = optimizer.param_groups[0]['lr']*args.decrease
-        lr = args.lr_init/(epoch+1)
+        lr = optimizer.param_groups[0]['lr']*args.decrease
+        # lr = args.lr_init/(epoch+1)
         utils.adjust_learning_rate(optimizer, lr)
 
     
