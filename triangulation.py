@@ -57,6 +57,7 @@ parser.add_argument('--swa_duration', type=int, default=5, help='duration of SWA
 parser.add_argument('--device', type=str, default='cuda', help='device to train on, cuda or cpu (default: cuda)')
 parser.add_argument('--sgd_duration', type=int, default=10, help='duration of SGD (default: 10)')
 parser.add_argument('--decrease', type=float, default=0.9, help='multiply learning rate by this value after SWA (default: 0.9)')
+# parser.add_argument('--lr_cycle', type=int, default=50, help='lengh of cyclical lr (default: 50)')
 
 
 # parser.add_argument('--trigger', type=float, default=-0.02, help='smoothed average of loss difference to trigger SWA start (-0.02)')
@@ -143,15 +144,17 @@ print(f'learning rate will decrease according to original schedule')
 
 
 def schedule(epoch):
-    t = (epoch) / (args.epochs)
+    t = (epoch) / (args.epochs) 
     lr_ratio = 0.01
     # if t <= 0.5: # for half of the training cycle, we dont change the default learning rate
     #     factor = 1.0
     if t <= 0.9: # then until there's 10% of the iterations left, we linearly decay the LR per cycle 
-        factor = 1.0 - (1.0 - lr_ratio) * (t - 0.5) / 0.4
+        factor = 1.0 - (1.0 - lr_ratio) * (t) / 0.4
     else: # in SWA mode: last 10% of training time will use the swa learning rate, in SGD: 1% of the initial learning rate
         factor = lr_ratio
     return args.lr_init * factor
+
+
 
 criterion = F.cross_entropy
 optimizer = torch.optim.SGD(
