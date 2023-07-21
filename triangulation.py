@@ -219,7 +219,7 @@ for epoch in range(start_epoch, args.epochs):
         
         # reduce learning rate
         # lr = optimizer.param_groups[0]['lr']*args.decrease
-        lr = optimizer.param_groups[0]['lr']/(epoch+1)
+        lr = args.lr_init/(epoch+1)
         utils.adjust_learning_rate(optimizer, lr)
 
         
