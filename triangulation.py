@@ -128,7 +128,7 @@ print(f'SWA will be triggered when loss difference reaches: {args.trigger}')
 print(f'SWA will run for {args.swa_duration} epochs')
 print(f'learning rate will decrease by: {args.decrease}')
 
-train_val_loss_diff=args.difference_init
+# train_val_loss_diff=args.difference_init
 
 
 criterion = F.cross_entropy
@@ -144,12 +144,12 @@ if args.resume is not None:
     print('Resume training from %s' % args.resume)
     checkpoint = torch.load(args.resume)
     start_epoch = checkpoint['epoch']
-    train_val_loss_diff=train_val_loss_diff,
+    # train_val_loss_diff=train_val_loss_diff,
     model.load_state_dict(checkpoint['state_dict'])
     optimizer.load_state_dict(checkpoint['optimizer'])
     
  
-columns = ['ep', 'lr', 'swa_n', 'swa_mode', 'tr_loss', 'tr_acc', 'vl_loss', 'vl_acc', 'loss_diff', 'time']
+columns = ['ep', 'lr', 'swa_n', 'swa_mode', 'tr_loss', 'tr_acc', 'vl_loss', 'vl_acc',  'time'] # 'loss_diff',
 
 
 train_res = {'loss': None, 'accuracy': None}
@@ -165,7 +165,7 @@ utils.save_checkpoint(
     # our additions
     train_res=train_res,
     val_res=val_res,
-    train_val_loss_diff=train_val_loss_diff,
+    # train_val_loss_diff=train_val_loss_diff,
     
     state_dict=model.state_dict(),   
     optimizer=optimizer.state_dict()
@@ -194,10 +194,11 @@ for epoch in range(start_epoch, args.epochs):
     val_res = utils.eval(loaders['validation'], model, criterion)
     
  
-    train_val_loss_diff=train_val_loss_diff*(1-args.alpha) + args.alpha*(train_res['loss']-val_res['loss'])
+    # train_val_loss_diff=train_val_loss_diff*(1-args.alpha) + args.alpha*(train_res['loss']-val_res['loss'])
     
     
-    if train_val_loss_diff < args.trigger and not swa_mode:
+    # if train_val_loss_diff < args.trigger and not swa_mode:
+    if (epoch+1)%10==0 and not swa_mode:
         swa_mode=True
     
     if swa_mode:
@@ -211,7 +212,7 @@ for epoch in range(start_epoch, args.epochs):
         # stop swa
         swa_mode=False
         swa_n=0
-        train_val_loss_diff=args.difference_init/(epoch+1)
+        # train_val_loss_diff=args.difference_init/(epoch+1)
 
         #copy swa model weights to the model we train
         # continue training the swa model
@@ -222,7 +223,8 @@ for epoch in range(start_epoch, args.epochs):
         lr = args.lr_init/(epoch+1)
         utils.adjust_learning_rate(optimizer, lr)
 
-        
+    
+
         
         
 
@@ -234,7 +236,7 @@ for epoch in range(start_epoch, args.epochs):
             # our additions
             train_res=train_res,
             val_res=val_res,
-            train_val_loss_diff=train_val_loss_diff,
+            # train_val_loss_diff=train_val_loss_diff,
 
             state_dict=model.state_dict(),
             optimizer=optimizer.state_dict()
@@ -242,7 +244,7 @@ for epoch in range(start_epoch, args.epochs):
 
     # print progress
     time_ep = time.time() - time_ep
-    values = [epoch + 1, lr, swa_n, swa_mode, train_res['loss'], train_res['accuracy'], val_res['loss'], val_res['accuracy'], train_val_loss_diff, time_ep]
+    values = [epoch + 1, lr, swa_n, swa_mode, train_res['loss'], train_res['accuracy'], val_res['loss'], val_res['accuracy'], time_ep]  # train_val_loss_diff
     
     table = tabulate.tabulate([values], columns, tablefmt='simple', floatfmt='8.4f')
     if epoch % 25 == 0:
@@ -275,7 +277,7 @@ if args.epochs % args.save_freq != 0:
         # our additions
         train_res=train_res,
         val_res=val_res,        
-        train_val_loss_diff=train_val_loss_diff,
+        # train_val_loss_diff=train_val_loss_diff,
         
         state_dict=model.state_dict(),
         optimizer=optimizer.state_dict()
