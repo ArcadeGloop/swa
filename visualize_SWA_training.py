@@ -23,7 +23,8 @@ import pandas as pd
 # %% _____________________________ 
 
 
-rootdir=r'C:\Users\alexy\Downloads\for visualization\trainingcheckpoints_weightedaverage_validation_accuracy_notscaled\training_dir'
+# rootdir=r'C:\Users\alexy\Downloads\for visualization\weightedaverage_validation_accuracy_notscaled\training_dir'
+rootdir=r'C:\Users\alexy\Downloads\for visualization\sgd'
 
 
 file_paths=[]
@@ -38,9 +39,9 @@ for subdir, dirs, files in os.walk(rootdir):
 
 
 
-# checkpoint = torch.load(file_paths[40])
+checkpoint = torch.load(file_paths[40])
 
-# checkpoint.keys()
+checkpoint.keys()
 
 
 # checkpoint['train_res']
@@ -52,9 +53,10 @@ for subdir, dirs, files in os.walk(rootdir):
 
 experiment_results=[]
 
-for file_path in file_paths:
+ # without SWA results
+for file_path in file_paths[2:]:
     
-    if '.sh' in file_path:
+    if  '.sh' in file_path or '-0' in file_path:
         continue
     
     experiment=file_path.split("\\")[-3]
@@ -62,57 +64,58 @@ for file_path in file_paths:
 
     
     experiment_results.append({'experiment': experiment, 
-                               'epoch':checkpoint['epoch'] ,
-                               'train_loss': checkpoint['train_res']['loss'],
-                               'train_accuracy': checkpoint['train_res']['accuracy'],
-                               'validation_loss': checkpoint['val_res']['loss'],
-                               'validation_accuracy':checkpoint['val_res']['accuracy'] })
+                                'epoch':checkpoint['epoch'] ,
+                                'train_loss': float(checkpoint['train_res']['loss']),
+                                'train_accuracy': checkpoint['train_res']['accuracy']})
+                                
+
+
+
+
+# with swa results
+# for file_path in file_paths:
+    
+#     if  '.sh' in file_path or '-150' in file_path:
+#         continue
+    
+#     experiment=file_path.split("\\")[-3]
+#     checkpoint = torch.load(file_path)
+
+    
+#     experiment_results.append({'experiment': experiment, 
+#                                'epoch':checkpoint['epoch'] ,
+#                                'train_loss': float(checkpoint['train_res']['loss']),
+#                                'train_accuracy': checkpoint['train_res']['accuracy'],
+#                                'validation_loss': float(checkpoint['val_res']['loss']),
+#                                'validation_accuracy':checkpoint['val_res']['accuracy'],
+#                                'original_swa_loss': float(checkpoint['swa_res']['loss']),
+#                                'original_swa_accuracy': checkpoint['swa_res']['accuracy'],
+#                                'our_swa_loss':float(checkpoint['our_swa_res']['loss']) ,
+#                                'our_swa_accuracy':  checkpoint['our_swa_res']['accuracy']})
 
 
 
 
 experiment_results_df=pd.DataFrame(experiment_results)
 
-
-experiment_results_df['validation_accuracy'].plot()
-
-
-sns.plot(experiment_results_df, x='epoch',)
+experiment_results_df.columns
 
 
 
-
-
-epochs=100
-lr_init=0.1
-lr_final=0.001
-decay_function='linear' # or "exponential"
-
-decay_start=0.1
-decay_end=0.9
-
-slope=(lr_init-lr_final)/(decay_start-decay_end)  # 
-
-intercept= lr_init -slope*decay_start
+melted_results_df=pd.melt(experiment_results_df, id_vars=['experiment','epoch'], value_vars=[ 'train_accuracy',
+        'train_loss'])
 
 
 
-
-def schedule(epoch):
-    t = (epoch) / (epochs) 
-    if t <= decay_start: # for half of the training cycle, we dont change the default learning rate
-        lr = lr_init
-    elif t <= decay_end: # then until there's 10% of the iterations left, we linearly decay the LR per cycle 
-        lr = t*slope+intercept
-    else: # in SWA mode: last 10% of training time will use the swa learning rate, in SGD: 1% of the initial learning rate
-        lr = lr_final
-    return lr
+# melted_results_df=pd.melt(experiment_results_df, id_vars=['experiment','epoch'], value_vars=['train_loss', 'train_accuracy',
+#        'validation_loss', 'validation_accuracy', 'original_swa_loss',
+#        'original_swa_accuracy', 'our_swa_loss', 'our_swa_accuracy'])
 
 
-import numpy as np 
-lrs=[]
 
-for epoch in np.arange(100):
-    lrs.append(schedule(epoch))
+sns.lineplot(melted_results_df[melted_results_df['variable'].str.contains('loss')], x='epoch',y='value', hue='variable')
 
-sns.lineplot(lrs)
+sns.lineplot(melted_results_df, x='epoch',y='value', hue='variable')
+
+
+

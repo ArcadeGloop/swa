@@ -143,10 +143,9 @@ print('SWAT-SGD training')
 # print(f'SWA will be triggered when loss difference reaches: {args.trigger}')
 print(f'SGD will run for {args.sgd_duration} epochs')
 print(f'SWA will run for {args.swa_duration} epochs')
-print(f'learning rate will decrease according to original schedule')
+print(f'learning rate decrease after swa ends')
 
 # print(f'learning rate will decrease by: {args.decrease}')
-
 
 # train_val_loss_diff=args.difference_init
 
@@ -236,7 +235,7 @@ for epoch in range(start_epoch, args.epochs):
     
     
     # if train_val_loss_diff < args.trigger and not swa_mode:
-    if (epoch+1)%10==0 and not swa_mode:
+    if (epoch+1)%args.sgd_duration==0 and not swa_mode:
         swa_mode=True
     
     if swa_mode:
