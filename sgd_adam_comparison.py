@@ -77,6 +77,12 @@ parser.add_argument('--type_of_average', type=str, default='weighted_moving_aver
 parser.add_argument('--scale_weights', type=bool, default=False, help='whether to use MinMax scaling (default: False)')
 parser.add_argument('--smoothing_factor', type=float, default=0.1, help='smoothing factor to be used for exponential smoothing (default: 0.1)')
 parser.add_argument('--eval_base_model', type=bool, default=False, help='whether to evaluation before swa starts (default: False)')
+parser.add_argument('--use_adam', type=bool, default=False, help='whether to use adam instead of sgd (default: False)')
+
+# for the lr schedule
+parser.add_argument('--lr_final', type=float, default=0.001, help='the final learning rate to use when decay ends (default: 0.001)')
+parser.add_argument('--decay_start', type=float, default=0.1, help='precentage of training time until learning rate decay starts (default: 0.1)')
+parser.add_argument('--decay_end', type=float, default=0.9, help='precentage of training time when learning rate decay ends (default: 0.9)')
 
 
 args = parser.parse_args()
@@ -156,19 +162,24 @@ if args.swa:
     swa_n = 0
     
 else:
-    print('SGD training')
+    pass
+    # print('SGD training')
+
+
+
+slope=(args.lr_init-args.lr_final)/(args.decay_start-args.decay_end)  # 
+intercept= args.lr_init -slope*args.decay_start
 
 
 def schedule(epoch):
-    t = (epoch) / (args.swa_start if args.swa else args.epochs)
-    lr_ratio = args.swa_lr / args.lr_init if args.swa else 0.01
-    if t <= 0.5: # for half of the training cycle, we dont change the default learning rate
-        factor = 1.0
-    elif t <= 0.9: # then until there's 10% of the iterations left, we linearly decay the LR per cycle 
-        factor = 1.0 - (1.0 - lr_ratio) * (t - 0.5) / 0.4
-    else: # in SWA mode: last 10% of training time will use the swa learning rate, in SGD: 1% of the initial learning rate
-        factor = lr_ratio
-    return args.lr_init * factor
+    t = (epoch) / (args.epochs) 
+    if t <= args.decay_start: # until decay starts, we dont change the default learning rate
+        lr = args.lr_init
+    elif t <= args.decay_end: # linearly decay the LR per cycle 
+        lr = t*slope+intercept
+    else: # when decay ends, use lr_final
+        lr = args.lr_final
+    return lr
 
 
 
@@ -177,8 +188,13 @@ criterion = F.cross_entropy
 optimizer = torch.optim.SGD(model.parameters(),
                             lr=args.lr_init,
                             momentum=args.momentum,
-                            weight_decay=args.wd)                                
+                            weight_decay=args.wd) if ~args.use_adam else torch.optim.Adam(model.parameters(),
+                                                                                          lr=args.lr_init,
+                                                                                            weight_decay=args.wd)
 
+print(f'training with {optimizer}')                                                                               
+                
+                                                                          
 start_epoch = 0
 if args.resume is not None:
     print('Resume training from %s' % args.resume)
@@ -389,6 +405,7 @@ if args.epochs % args.save_freq != 0:
         swa_n=swa_n if args.swa else None,
         optimizer=optimizer.state_dict()
     )
+
 
 
 
