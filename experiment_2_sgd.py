@@ -223,7 +223,13 @@ swa_n=0
 
 for epoch in range(start_epoch, args.epochs):
     time_ep = time.time()
-
+    
+    # reduce learning rate
+    lr = schedule(epoch)
+    # lr = optimizer.param_groups[0]['lr']*args.decrease
+    # lr = args.lr_init/(epoch+1)
+    utils.adjust_learning_rate(optimizer, lr)
+    
 
     train_res = utils.train_epoch(loaders['train'], model, criterion, optimizer)
     

@@ -32,10 +32,6 @@ rootdir='C:/Users/alexy/Downloads/for visualization/iterative_swa_from_same_sgd'
 experiment='iterative_swa'
 
 
-rootdir='C:/Users/alexy/Downloads/for visualization/sgd'
-experiment='sgd'
-
-
 
 file_paths=[]
 
@@ -141,13 +137,52 @@ melted_results_df=pd.melt(experiment_results_df, id_vars=['experiment','epoch'],
 # %% 
 
 
+rootdir='C:/Users/alexy/Downloads/for visualization/sgd'
+experiment='sgd'
+
+
+
+file_paths=[]
+
+# get file paths
+for subdir, dirs, files in os.walk(rootdir): 
+    for file in files:
+        
+        
+        file_path=os.path.join(subdir, file)
+        file_paths.append(file_path)
+
+
+
+
+experiment_results=[]
+
+# without SWA results
+for file_path in file_paths:
+    
+    if  '.sh' in file_path or '-9' in file_path or '-0' in file_path:
+        continue
+    
+    checkpoint = torch.load(file_path)
+
+    
+    experiment_results.append({'experiment': experiment, 
+                               # 'learning_rate':checkpoint['lr'],
+                                'epoch':checkpoint['epoch'] ,
+                                'train_loss': float(checkpoint['train_res']['loss']),
+                                'train_accuracy': checkpoint['train_res']['accuracy'],
+                                'validation_loss': float(checkpoint['val_res']['loss']),
+                                'validation_accuracy':checkpoint['val_res']['accuracy']})
+
+
+
 
 experiment_results_df_2=pd.DataFrame(experiment_results)
 
-temp=experiment_results_df_2[experiment_results_df_2['epoch'].isin(np.arange(11))]
-temp['experiment']=['iterative_swa']*temp.shape[0]
+# temp=experiment_results_df_2[experiment_results_df_2['epoch'].isin(np.arange(11))]
+# temp['experiment']=['iterative_swa']*temp.shape[0]
 
-experiment_results_df=pd.concat([experiment_results_df,temp],axis=0)
+# experiment_results_df=pd.concat([experiment_results_df,temp],axis=0)
 
 melted_results_df_2=pd.melt(experiment_results_df_2, id_vars=['experiment','epoch'], value_vars=[ 'train_accuracy',
         'train_loss','validation_accuracy', 'validation_loss'])
@@ -160,7 +195,7 @@ melted_results_df_3['legend']=melted_results_df_3['experiment']+ '_' +melted_res
 
 
 sns.set_theme()
-sns.lineplot(melted_results_df_3[melted_results_df['variable'].str.contains('validation_accuracy')], x='epoch',y='value', hue='legend')
+sns.lineplot(melted_results_df_3[melted_results_df['variable'].str.contains('accuracy')], x='epoch',y='value', hue='legend')
 
 
 for x in np.arange(15,150,10):
