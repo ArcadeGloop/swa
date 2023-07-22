@@ -28,8 +28,9 @@ import numpy as np
 # rootdir=r'C:\Users\alexy\Downloads\for visualization\sgd'
 
 
-rootdir='C:/Users/alexy/Downloads/for visualization/swa_boosted_sgd'
-experiment='swa_boosted_sgd'
+rootdir='C:/Users/alexy/Downloads/for visualization/iterative_swa_from_same_sgd'
+experiment='iterative_swa'
+
 
 rootdir='C:/Users/alexy/Downloads/for visualization/sgd'
 experiment='sgd'
@@ -63,9 +64,9 @@ checkpoint.keys()
 experiment_results=[]
 
 # without SWA results
-for file_path in file_paths[2:]:
+for file_path in file_paths:
     
-    if  '.sh' in file_path or '-0' in file_path:
+    if  '.sh' in file_path or '-9' in file_path or '-0' in file_path:
         continue
     
     checkpoint = torch.load(file_path)
@@ -128,13 +129,13 @@ melted_results_df=pd.melt(experiment_results_df, id_vars=['experiment','epoch'],
 #        'original_swa_accuracy', 'our_swa_loss', 'our_swa_accuracy'])
 
 
-sns.set_theme()
-sns.lineplot(melted_results_df[melted_results_df['variable'].str.contains('accuracy')], x='epoch',y='value', hue='variable')
+# sns.set_theme()
+# sns.lineplot(melted_results_df[melted_results_df['variable'].str.contains('accuracy')], x='epoch',y='value', hue='variable')
 
-# sns.lineplot(melted_results_df, x='epoch',y='value', hue='variable')
+# # sns.lineplot(melted_results_df, x='epoch',y='value', hue='variable')
 
-for x in np.arange(15,150,10):
-    plt.plot([x, x], [50, 100], 'r--', lw=2)
+# for x in np.arange(15,150,10):
+#     plt.plot([x, x], [50, 100], 'r--', lw=2)
 
 
 # %% 
@@ -143,6 +144,10 @@ for x in np.arange(15,150,10):
 
 experiment_results_df_2=pd.DataFrame(experiment_results)
 
+temp=experiment_results_df_2[experiment_results_df_2['epoch'].isin(np.arange(11))]
+temp['experiment']=['iterative_swa']*temp.shape[0]
+
+experiment_results_df=pd.concat([experiment_results_df,temp],axis=0)
 
 melted_results_df_2=pd.melt(experiment_results_df_2, id_vars=['experiment','epoch'], value_vars=[ 'train_accuracy',
         'train_loss','validation_accuracy', 'validation_loss'])
