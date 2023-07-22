@@ -113,7 +113,17 @@ loaders = {
     )
 }
 
-print('Preparing model')
+
+
+
+
+
+print('Preparing models')
+
+default_model = model_cfg.base(*model_cfg.args, num_classes=num_classes, **model_cfg.kwargs)
+default_model.to(device)
+
+
 model = model_cfg.base(*model_cfg.args, num_classes=num_classes, **model_cfg.kwargs)
 model.to(device)
 
@@ -149,9 +159,6 @@ def schedule(epoch):
     return lr
 
 
-
-
-
 criterion = F.cross_entropy
 optimizer = torch.optim.SGD(
     model.parameters(),
@@ -173,6 +180,12 @@ if args.resume is not None:
 columns = ['ep', 'lr', 'swa_n', 'swa_mode', 'tr_loss', 'tr_acc', 'vl_loss', 'vl_acc',  'time'] # 'loss_diff',
 
 
+
+
+default_train_res = {'loss': None, 'accuracy': None}
+default_val_res = {'loss': None, 'accuracy': None}
+
+
 train_res = {'loss': None, 'accuracy': None}
 val_res = {'loss': None, 'accuracy': None}
 
@@ -186,6 +199,9 @@ utils.save_checkpoint(
     # our additions
     train_res=train_res,
     val_res=val_res,
+    default_train_res = default_train_res,
+    default_val_res = default_val_res,
+
     # train_val_loss_diff=train_val_loss_diff,
     
     state_dict=model.state_dict(),   

@@ -185,12 +185,16 @@ def schedule(epoch):
 
 criterion = F.cross_entropy
 
-optimizer = torch.optim.SGD(model.parameters(),
+if args.use_adam:
+    optimizer = torch.optim.Adam(model.parameters(),
+                                 lr=args.lr_init,
+                                 weight_decay=args.wd)
+else: 
+    optimizer = torch.optim.SGD(model.parameters(),
                             lr=args.lr_init,
                             momentum=args.momentum,
-                            weight_decay=args.wd) if ~args.use_adam else torch.optim.Adam(model.parameters(),
-                                                                                          lr=args.lr_init,
-                                                                                            weight_decay=args.wd)
+                            weight_decay=args.wd) 
+                                                                                         
 
 print(f'training with {optimizer}')                                                                               
                 

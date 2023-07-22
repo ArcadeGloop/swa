@@ -10,10 +10,11 @@ will visualize SWA training vs regular SGD with momentum
 # %% _____________________________ imports
 
 import seaborn as sns
-import matplotlib.pyplot
+import matplotlib.pyplot as plt
 import os
 import torch
 import pandas as pd
+import numpy as np
 
 
 # %% _____________________________ functions
@@ -24,7 +25,15 @@ import pandas as pd
 
 
 # rootdir=r'C:\Users\alexy\Downloads\for visualization\weightedaverage_validation_accuracy_notscaled\training_dir'
-rootdir=r'C:\Users\alexy\Downloads\for visualization\sgd'
+# rootdir=r'C:\Users\alexy\Downloads\for visualization\sgd'
+
+
+rootdir='C:/Users/alexy/Downloads/for visualization/swa_boosted_sgd'
+experiment='swa_boosted_sgd'
+
+rootdir='C:/Users/alexy/Downloads/for visualization/sgd'
+experiment='sgd'
+
 
 
 file_paths=[]
@@ -53,21 +62,22 @@ checkpoint.keys()
 
 experiment_results=[]
 
- # without SWA results
+# without SWA results
 for file_path in file_paths[2:]:
     
     if  '.sh' in file_path or '-0' in file_path:
         continue
     
-    experiment=file_path.split("\\")[-3]
     checkpoint = torch.load(file_path)
 
     
     experiment_results.append({'experiment': experiment, 
+                               # 'learning_rate':checkpoint['lr'],
                                 'epoch':checkpoint['epoch'] ,
                                 'train_loss': float(checkpoint['train_res']['loss']),
-                                'train_accuracy': checkpoint['train_res']['accuracy']})
-                                
+                                'train_accuracy': checkpoint['train_res']['accuracy'],
+                                'validation_loss': float(checkpoint['val_res']['loss']),
+                                'validation_accuracy':checkpoint['val_res']['accuracy']})
 
 
 
@@ -98,12 +108,18 @@ for file_path in file_paths[2:]:
 
 experiment_results_df=pd.DataFrame(experiment_results)
 
-experiment_results_df.columns
-
+# experiment_results_df.columns
 
 
 melted_results_df=pd.melt(experiment_results_df, id_vars=['experiment','epoch'], value_vars=[ 'train_accuracy',
-        'train_loss'])
+        'train_loss','validation_accuracy', 'validation_loss'])
+
+
+
+
+# melted_results_df=pd.melt(experiment_results_df, id_vars=['experiment','epoch'], value_vars=[ 'train_accuracy',
+#         'train_loss'])
+
 
 
 
@@ -112,10 +128,38 @@ melted_results_df=pd.melt(experiment_results_df, id_vars=['experiment','epoch'],
 #        'original_swa_accuracy', 'our_swa_loss', 'our_swa_accuracy'])
 
 
+sns.set_theme()
+sns.lineplot(melted_results_df[melted_results_df['variable'].str.contains('accuracy')], x='epoch',y='value', hue='variable')
 
-sns.lineplot(melted_results_df[melted_results_df['variable'].str.contains('loss')], x='epoch',y='value', hue='variable')
+# sns.lineplot(melted_results_df, x='epoch',y='value', hue='variable')
 
-sns.lineplot(melted_results_df, x='epoch',y='value', hue='variable')
+for x in np.arange(15,150,10):
+    plt.plot([x, x], [50, 100], 'r--', lw=2)
+
+
+# %% 
+
+
+
+experiment_results_df_2=pd.DataFrame(experiment_results)
+
+
+melted_results_df_2=pd.melt(experiment_results_df_2, id_vars=['experiment','epoch'], value_vars=[ 'train_accuracy',
+        'train_loss','validation_accuracy', 'validation_loss'])
+
+
+
+melted_results_df_3=pd.concat([melted_results_df,melted_results_df_2],axis=0)
+melted_results_df_3['legend']=melted_results_df_3['experiment']+ '_' +melted_results_df_3['variable']
+
+
+
+sns.set_theme()
+sns.lineplot(melted_results_df_3[melted_results_df['variable'].str.contains('validation_accuracy')], x='epoch',y='value', hue='legend')
+
+
+for x in np.arange(15,150,10):
+    plt.plot([x, x], [50, 100], 'r--', lw=2)
 
 
 
