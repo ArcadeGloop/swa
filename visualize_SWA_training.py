@@ -78,3 +78,41 @@ experiment_results_df['validation_accuracy'].plot()
 
 
 sns.plot(experiment_results_df, x='epoch',)
+
+
+
+
+
+epochs=100
+lr_init=0.1
+lr_final=0.001
+decay_function='linear' # or "exponential"
+
+decay_start=0.1
+decay_end=0.9
+
+slope=(lr_init-lr_final)/(decay_start-decay_end)  # 
+
+intercept= lr_init -slope*decay_start
+
+
+
+
+def schedule(epoch):
+    t = (epoch) / (epochs) 
+    if t <= decay_start: # for half of the training cycle, we dont change the default learning rate
+        lr = lr_init
+    elif t <= decay_end: # then until there's 10% of the iterations left, we linearly decay the LR per cycle 
+        lr = t*slope+intercept
+    else: # in SWA mode: last 10% of training time will use the swa learning rate, in SGD: 1% of the initial learning rate
+        lr = lr_final
+    return lr
+
+
+import numpy as np 
+lrs=[]
+
+for epoch in np.arange(100):
+    lrs.append(schedule(epoch))
+
+sns.lineplot(lrs)

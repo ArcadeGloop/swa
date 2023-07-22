@@ -55,8 +55,16 @@ parser.add_argument('--seed', type=int, default=1, metavar='S', help='random see
 parser.add_argument('--val_size', type=float, default=0.2, help='validation set size (default: 0.2)')
 parser.add_argument('--swa_duration', type=int, default=5, help='duration of SWA (default: 5)')
 parser.add_argument('--device', type=str, default='cuda', help='device to train on, cuda or cpu (default: cuda)')
-parser.add_argument('--sgd_duration', type=int, default=10, help='duration of SGD (default: 10)')
-parser.add_argument('--decrease', type=float, default=0.9, help='multiply learning rate by this value after SWA (default: 0.9)')
+parser.add_argument('--sgd_duration', type=float, default=10, help='duration of SGD (default: 10)')
+
+# for the lr schedule
+parser.add_argument('--lr_final', type=float, default=0.001, help='the final learning rate to use when decay ends (default: 0.001)')
+parser.add_argument('--decay_start', type=float, default=0.1, help='precentage of training time until learning rate decay starts (default: 0.1)')
+parser.add_argument('--decay_end', type=float, default=0.9, help='precentage of training time when learning rate decay ends (default: 0.9)')
+
+
+
+# parser.add_argument('--decrease', type=float, default=0.9, help='multiply learning rate by this value after SWA (default: 0.9)')
 # parser.add_argument('--lr_cycle', type=int, default=50, help='lengh of cyclical lr (default: 50)')
 
 
@@ -143,16 +151,21 @@ print(f'learning rate will decrease according to original schedule')
 # train_val_loss_diff=args.difference_init
 
 
+slope=(args.lr_init-args.lr_final)/(args.decay_start-args.decay_end)  # 
+intercept= args.lr_init -slope*args.decay_start
+
+
 def schedule(epoch):
     t = (epoch) / (args.epochs) 
-    lr_ratio = 0.01
-    # if t <= 0.5: # for half of the training cycle, we dont change the default learning rate
-    #     factor = 1.0
-    if t <= 0.9: # then until there's 10% of the iterations left, we linearly decay the LR per cycle 
-        factor = 1.0 - (1.0 - lr_ratio) * (t) / 0.4
-    else: # in SWA mode: last 10% of training time will use the swa learning rate, in SGD: 1% of the initial learning rate
-        factor = lr_ratio
-    return args.lr_init * factor
+    if t <= args.decay_start: # until decay starts, we dont change the default learning rate
+        lr = args.lr_init
+    elif t <= args.decay_end: # linearly decay the LR per cycle 
+        lr = t*slope+intercept
+    else: # when decay ends, use lr_final
+        lr = args.lr_final
+    return lr
+
+
 
 
 
