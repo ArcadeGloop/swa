@@ -13,22 +13,6 @@ import tabulate
 
 
 
-# TODO
-# if best model doesnt improve for X epochs, reset learning rate cycle
-# start swa at first when loss decrease slows down compared to how it started. 
-# then average only the best performing models. not just consecutive models. 
-# could add online bayesian optimisation for hyperparam tuning, 
-# each time for increasing number of epochs.
-
-
-# _________ Triangulation _________
-# 1. use the same LR until a plateau is reached. uing exponential smoothing with alpha, another hyper param
-# 2. then start SWA for C epochs. C is a hyper parameter
-# 3. after C epochs continue training the SWA model
-# 4. reduce learning rate by D, by multiplying LR. another hyper parameter.
-
-
-
 parser = argparse.ArgumentParser(description='SGD/SWA training')
 parser.add_argument('--dir', type=str, default='training_dir', required=True, help='training directory (default: None)')
 
@@ -141,8 +125,8 @@ swa_model.to(device)
 
 print('SWAT-SGD training')
 # print(f'SWA will be triggered when loss difference reaches: {args.trigger}')
-print(f'SGD will run for {args.sgd_duration} epochs')
-print(f'SWA will run for {args.swa_duration} epochs')
+print(f'SGD will run for {args.sgd_duration+args.swa_duration} epochs')
+print(f'SWA will average last {args.swa_duration} epochs')
 print(f'learning rate decrease after swa ends')
 
 # print(f'learning rate will decrease by: {args.decrease}')

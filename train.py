@@ -56,6 +56,7 @@ parser.add_argument('--resume', type=str, default=None, metavar='CKPT',
 
 parser.add_argument('--epochs', type=int, default=200, metavar='N', help='number of epochs to train (default: 200)')
 parser.add_argument('--save_freq', type=int, default=1, metavar='N', help='save frequency (default: 1)')
+parser.add_argument('--eval_base_model', type=bool, default=False, help='whether to evaluation before swa starts (default: False)')
 parser.add_argument('--eval_freq', type=int, default=3, metavar='N', help='evaluation frequency (default: 3)')
 parser.add_argument('--lr_init', type=float, default=0.1, metavar='LR', help='initial learning rate (default: 0.01)')
 parser.add_argument('--momentum', type=float, default=0.9, metavar='M', help='SGD momentum (default: 0.9)')
@@ -254,6 +255,12 @@ for epoch in range(start_epoch, args.epochs):
     train_res = utils.train_epoch(loaders['train'], model, criterion, optimizer)
     results.update({'train':train_res})    
 
+    
+    if args.eval_base_model and (epoch == 0 or epoch % args.eval_freq == args.eval_freq - 1 or epoch == args.epochs - 1):
+        val_res = utils.eval(loaders['validation'], model, criterion)
+    else:
+        val_res = {'loss': None, 'accuracy': None}
+    
     # when args.swa_c_epochs==1 (the default), the third condition is always true
     # compute moving average when in swa mode
     if args.swa and (epoch + 1) >= args.swa_start and (epoch + 1 - args.swa_start) % args.swa_c_epochs == 0:
