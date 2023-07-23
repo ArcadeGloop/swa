@@ -45,6 +45,7 @@ parser.add_argument('--sgd_duration', type=float, default=10, help='duration of 
 parser.add_argument('--lr_final', type=float, default=0.001, help='the final learning rate to use when decay ends (default: 0.001)')
 parser.add_argument('--decay_start', type=float, default=0.1, help='precentage of training time until learning rate decay starts (default: 0.1)')
 parser.add_argument('--decay_end', type=float, default=0.9, help='precentage of training time when learning rate decay ends (default: 0.9)')
+parser.add_argument('--decay_after_swa', type=bool, default=True, help='when to decrease learning rate (default: True)')
 
 
 
@@ -224,6 +225,9 @@ swa_n=0
 for epoch in range(start_epoch, args.epochs):
     time_ep = time.time()
 
+    if (~args.decay_after_swa):
+        lr = schedule(epoch)
+        utils.adjust_learning_rate(optimizer, lr)
 
     train_res = utils.train_epoch(loaders['train'], model, criterion, optimizer)
     
@@ -284,11 +288,10 @@ for epoch in range(start_epoch, args.epochs):
         # continue training the swa model
         utils.moving_average(model, swa_model, 1.0) 
         
-        # reduce learning rate
-        lr = schedule(epoch)
-        # lr = optimizer.param_groups[0]['lr']*args.decrease
-        # lr = args.lr_init/(epoch+1)
-        utils.adjust_learning_rate(optimizer, lr)
+        if args.decay_after_swa:
+            # reduce learning rate
+            lr = schedule(epoch)
+            utils.adjust_learning_rate(optimizer, lr)
 
     
 

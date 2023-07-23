@@ -62,7 +62,7 @@ experiment_results=[]
 # without SWA results
 for file_path in file_paths:
     
-    if  '.sh' in file_path or '-9' in file_path or '-0' in file_path:
+    if  '.sh' in file_path or '-9' in file_path or '-0' in file_path :
         continue
     
     checkpoint = torch.load(file_path)
@@ -137,7 +137,7 @@ melted_results_df=pd.melt(experiment_results_df, id_vars=['experiment','epoch'],
 # %% 
 
 
-rootdir='C:/Users/alexy/Downloads/for visualization/sgd'
+rootdir='C:/Users/alexy/Downloads/for visualization/correct_sgd'
 experiment='sgd'
 
 
@@ -193,13 +193,30 @@ melted_results_df_3=pd.concat([melted_results_df,melted_results_df_2],axis=0)
 melted_results_df_3['legend']=melted_results_df_3['experiment']+ '_' +melted_results_df_3['variable']
 
 
+# %% plot it
 
 sns.set_theme()
-sns.lineplot(melted_results_df_3[melted_results_df['variable'].str.contains('accuracy')], x='epoch',y='value', hue='legend')
+fig=sns.lineplot(melted_results_df_3[melted_results_df_3['variable'].str.contains('accuracy')], x='epoch',y='value', hue='legend')
 
 
 for x in np.arange(15,150,10):
     plt.plot([x, x], [50, 100], 'r--', lw=2)
 
 
+x_y_label_size=22
+
+plt.xlabel("epoch",size=x_y_label_size)
+plt.xticks(np.arange(15,151,5))
+plt.yticks(np.arange(70,101,5), size=x_y_label_size-2)
+plt.xlim([15,151])
+plt.ylim([79,100])
+plt.tick_params('x',labelsize=x_y_label_size-5,labelrotation=0 )
+plt.setp(fig.get_legend().get_texts(), fontsize=x_y_label_size-2) 
+plt.setp(fig.get_legend().get_title(), fontsize=x_y_label_size-2) 
+plt.ylabel("Accuracy",size=x_y_label_size)
+
+
+# %% 
+
+a=melted_results_df_2[melted_results_df_2['variable']=='validation_accuracy']
 
