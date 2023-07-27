@@ -13,19 +13,45 @@ by Pavel Izmailov, Dmitrii Podoprikhin, Timur Garipov, Dmitry Vetrov and Andrew 
 
 we added further options to train.py that would allow us to experiment with our proposed improvements to the paper.
 --val_size controls the size of the validation set used for evaluation during training.
---type_of_average controls the type of averaging method to train and compare to the original SWA method ('weighted_moving_average' or 'exponential_smoothing')
---weight_from_data controls where te weights are taken from for the weighted_moving_average ( 'train' or 'validation')
+--type_of_average controls the type of averaging method to train and compare to the original SWA method ('weighted_moving_average' or 'exponential_smoothing').
+--weight_from_data controls where te weights are taken from for the weighted_moving_average ( 'train' or 'validation').
 --scale_weights controls whether to scale the weights using MinMax scaling.
---smoothing_factor is the alpha passed to  exponential_smoothing
---eval_base_model controls whether to evaluate the pre SWA model during training
+--smoothing_factor is the alpha passed to  exponential_smoothing.
+--eval_base_model controls whether to evaluate the pre SWA model during training.
 
-the utils.py script contains our implementation of of the weighted_moving_average and exponential_smoothing functions
+the utils.py script contains our implementation of of the weighted_moving_average and exponential_smoothing functions.
+visualisations of accuracy and loss during training for experiment 1 are implemented in exp_1_visuals.py .
+visualisations of accuracy and loss during training for experiment 2 are implemented in exp_2_visuals.py .
+the training of the Iterative SWA method from experiment 2 is implemented in exp_2_iswa_train.py .
+the comperative SGD training for experiment 2 is implemented in exp_2_sgd_train.py .
 
-visualisations of accuracy and loss during training for experiment 1 are implemented in exp_1_visuals.py
-visualisations of accuracy and loss during training for experiment 2 are implemented in exp_2_visuals.py
+The commands we used for running experiment 1:
 
-the training of the Iterative SWA method from experiment 2 is implemented in exp_2_iswa_train.py
-the comperative SGD training for experiment 2 is implemented in exp_2_sgd_train.py
+initial pre training: 
+
+python3 swa/train.py --dir=training_dir --dataset=CIFAR10 --data_path=data  --model=PreResNet14 --epochs=150 --lr_init=0.1 --wd=3e-4 --save_freq=1
+
+different averaging techniques:
+
+
+python3 swa/train.py --resume swa/checkpoints/checkpoint-150.pt --dir=training_dir --dataset=CIFAR10 --data_path=data  --model=PreResNet14 --epochs=200 --lr_init=0.1 --wd=3e-4  --save_freq=1 --swa --swa_start=151 --swa_lr=0.05 --type_of_average=exponential_smoothing --smoothing_factor=0.1
+python3 swa/train.py --resume swa/checkpoints/checkpoint-150.pt --dir=training_dir --dataset=CIFAR10 --data_path=data  --model=PreResNet14 --epochs=200 --lr_init=0.1 --wd=3e-4  --save_freq=1 --swa --swa_start=151 --swa_lr=0.05 --weight_from_data=validation --type_of_weight=accuracy --type_of_average=weighted_moving_average --scale_weights=True
+python3 swa/train.py --resume swa/checkpoints/checkpoint-150.pt --dir=training_dir --dataset=CIFAR10 --data_path=data  --model=PreResNet14 --epochs=200 --lr_init=0.1 --wd=3e-4  --save_freq=1 --swa --swa_start=151 --swa_lr=0.05 --weight_from_data=validation --type_of_weight=accuracy --type_of_average=weighted_moving_average --scale_weights=False
+
+python3 swa/train.py --resume swa/checkpoints/checkpoint-150.pt --dir=training_dir --dataset=CIFAR10 --data_path=data  --model=PreResNet14 --epochs=200 --lr_init=0.1 --wd=3e-4  --save_freq=1 --swa --swa_start=151 --swa_lr=0.05 --weight_from_data=validation --type_of_weight=loss --type_of_average=weighted_moving_average --scale_weights=False
+python3 swa/train.py --resume swa/checkpoints/checkpoint-150.pt --dir=training_dir --dataset=CIFAR10 --data_path=data  --model=PreResNet14 --epochs=200 --lr_init=0.1 --wd=3e-4  --save_freq=1 --swa --swa_start=151 --swa_lr=0.05 --weight_from_data=validation --type_of_weight=loss --type_of_average=weighted_moving_average --scale_weights=True
+python3 swa/train.py --resume swa/checkpoints/checkpoint-150.pt --dir=training_dir --dataset=CIFAR10 --data_path=data  --model=PreResNet14 --epochs=200 --lr_init=0.1 --wd=3e-4  --save_freq=1 --swa --swa_start=151 --swa_lr=0.05 --type_of_average=exponential_smoothing  --smoothing_factor=0.9
+python3 swa/train.py --resume swa/checkpoints/checkpoint-150.pt --dir=training_dir --dataset=CIFAR10 --data_path=data  --model=PreResNet14 --epochs=200 --lr_init=0.1 --wd=3e-4  --save_freq=1 --swa --swa_start=151 --swa_lr=0.05 --type_of_average=exponential_smoothing  --smoothing_factor=0.5
+
+The commands we used for running experiment 2:
+
+regular SGD:
+python3 swa/experiment_2_sgd.py --sgd_duration=200  --dir=training_dir --model=PreResNet14 --dataset=CIFAR10 --data_path=data  --epochs=150 --lr_init=0.1 --wd=3e-4  --save_freq=1 --device=cuda
+
+Iterative SWA:
+python3 swa/exp_2_iswa_train.py --resume=swa/checkpoints/checkpoint-9.pt --dir=training_dir --model=PreResNet14 --dataset=CIFAR10 --data_path=data  --epochs=150 --lr_init=0.1 --wd=3e-4  --save_freq=1 --device=cuda
+
+
 
 # From Original Repository
 SWA is a simple DNN training method that can be used as a drop-in replacement for SGD with improved generalization, faster convergence, and essentially no overhead. The key idea of SWA is to average multiple samples produced by SGD with a modified learning rate schedule. We use a constant or cyclical learning rate schedule that causes SGD to _explore_ the set of points in the weight space corresponding to high-performing networks. We observe that SWA converges more quickly than SGD, and to wider optima that provide higher test accuracy. 
