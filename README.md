@@ -12,17 +12,30 @@ by Pavel Izmailov, Dmitrii Podoprikhin, Timur Garipov, Dmitry Vetrov and Andrew 
 # Introduction
 
 we added further options to train.py that would allow us to experiment with our proposed improvements to the paper.
+
 --val_size controls the size of the validation set used for evaluation during training.
+
 --type_of_average controls the type of averaging method to train and compare to the original SWA method ('weighted_moving_average' or 'exponential_smoothing').
+
 --weight_from_data controls where te weights are taken from for the weighted_moving_average ( 'train' or 'validation').
+
 --scale_weights controls whether to scale the weights using MinMax scaling.
+
 --smoothing_factor is the alpha passed to  exponential_smoothing.
+
 --eval_base_model controls whether to evaluate the pre SWA model during training.
 
+
 the utils.py script contains our implementation of of the weighted_moving_average and exponential_smoothing functions.
-visualisations of accuracy and loss during training for experiment 1 are implemented in exp_1_visuals.py .
-visualisations of accuracy and loss during training for experiment 2 are implemented in exp_2_visuals.py .
+
+visualizations of accuracy and loss during training for experiment 1 are implemented in exp_1_visuals.py .
+
+further visualizations for experiment 1 are implemented in vizualization.py
+
+visualizations of accuracy and loss during training for experiment 2 are implemented in exp_2_visuals.py .
+
 the training of the Iterative SWA method from experiment 2 is implemented in exp_2_iswa_train.py .
+
 the comperative SGD training for experiment 2 is implemented in exp_2_sgd_train.py .
 
 The commands we used for running experiment 1:
