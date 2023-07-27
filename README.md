@@ -1,14 +1,33 @@
-# Stochastic Weight Averaging (SWA)
-This repository contains a PyTorch implementation of the Stochastic Weight Averaging (SWA) training method for DNNs from the paper
+# Understanding & Improving Stochastic Weight Averaging (SWA)
+This repository was made as part of the final project in the 'Introduction to Deep Learning' course in Ben Gurion University of the Negev, Israel.
+
+This repository is afork of the original repository that contains a PyTorch implementation of the Stochastic Weight Averaging (SWA) training method for DNNs from the paper
 
 [Averaging Weights Leads to Wider Optima and Better Generalization](https://arxiv.org/abs/1803.05407)
 
 by Pavel Izmailov, Dmitrii Podoprikhin, Timur Garipov, Dmitry Vetrov and Andrew Gordon Wilson.
 
-<b>Note: as of August 2020, SWA is now a core optimizer in the PyTorch library, and can be immediately used by anyone with PyTorch, without needing an external repo, as easily SGD or Adam.</b> Please see [this blog post](https://pytorch.org/blog/pytorch-1.6-now-includes-stochastic-weight-averaging/) introducing the native PyTorch implementation with examples.
+
 
 # Introduction
 
+we added further options to train.py that would allow us to experiment with our proposed improvements to the paper.
+--val_size controls the size of the validation set used for evaluation during training.
+--type_of_average controls the type of averaging method to train and compare to the original SWA method ('weighted_moving_average' or 'exponential_smoothing')
+--weight_from_data controls where te weights are taken from for the weighted_moving_average ( 'train' or 'validation')
+--scale_weights controls whether to scale the weights using MinMax scaling.
+--smoothing_factor is the alpha passed to  exponential_smoothing
+--eval_base_model controls whether to evaluate the pre SWA model during training
+
+the utils.py script contains our implementation of of the weighted_moving_average and exponential_smoothing functions
+
+visualisations of accuracy and loss during training for experiment 1 are implemented in exp_1_visuals.py
+visualisations of accuracy and loss during training for experiment 2 are implemented in exp_2_visuals.py
+
+the training of the Iterative SWA method from experiment 2 is implemented in exp_2_iswa_train.py
+the comperative SGD training for experiment 2 is implemented in exp_2_sgd_train.py
+
+# From Original Repository
 SWA is a simple DNN training method that can be used as a drop-in replacement for SGD with improved generalization, faster convergence, and essentially no overhead. The key idea of SWA is to average multiple samples produced by SGD with a modified learning rate schedule. We use a constant or cyclical learning rate schedule that causes SGD to _explore_ the set of points in the weight space corresponding to high-performing networks. We observe that SWA converges more quickly than SGD, and to wider optima that provide higher test accuracy. 
 
 In this repo we implement the constant learning rate schedule that we found to be most practical on CIFAR datasets.
