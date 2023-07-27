@@ -80,8 +80,6 @@ experiment_results_df['experiment']=experiment_results_df['experiment'].map({'tr
                           'trainingcheckpoints_weightedaverage_validation_loss_notscaled':'unscaled_loss_weighted_average',
                           'trainingcheckpoints_weightedaverage_validation_loss_scaled':'scaled_loss_weighted_average'})
 
-# experiment_results_df.columns
-
 
 melted_results_df=pd.melt(experiment_results_df,
                           id_vars=['experiment','epoch'],
@@ -137,7 +135,7 @@ plt.setp(fig.get_legend().get_title(), fontsize=x_y_label_size-2)
 plt.ylabel("Validation Accuracy",size=x_y_label_size)
 
 
-# %%
+# %% statistics
 
 a=plot_df[(plot_df['epoch']==200) & (plot_df['variable']=='our_swa_validation_accuracy')]
 

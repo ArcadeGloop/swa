@@ -9,35 +9,6 @@ import models
 import utils
 import tabulate
 
-# Notes
-# experiment 1: !python3 swa/train.py --dir=training_dir --dataset=CIFAR10 --data_path=data  --model=PreResNet14 --epochs=150 --lr_init=0.1 --wd=3e-4 --swa --swa_start=100 --swa_lr=0.05 --save_freq=1 # SWA 1.5 Budgets
-# train model for 150 epochs. save all checkpoints. then wen doing swa, load that final model and continue
-
-# Bugs
-
-
-# TODO
-# start with experiment 3 to find best configuration of weights
-# then do experiment 2. implement a cycle during swa. for each cycle, continue from best performing model
-
-# add different weight configurations (min max sacled acc, acc, inverse  min_max_scaled loss)
-# check if they calculate accuracy correctly
-
-
-
-# Possible Additions
-# add smart swa activation. when variance of validation acc of last few epochs decreases below a threshhold
-# --- and when model doesnt improve on validation for some number of epochs.
-# --- or mean of last 10 epochs hasnt increased much. 
-# investigate model performance peak
-# during averaging, first check similarity to new weights, dont use outliars.
-# trying using as weight: 
-    # plain val_acc, MinMax normalized val_acc, 
-
-# Questions we could answer
-# how man swa epochs does it take to reach the local minimum
-
-
 
 
 parser = argparse.ArgumentParser(description='SGD/SWA training')
@@ -243,8 +214,6 @@ swa_first_iter=True
 # list_of_scores=[]
 results={}
 minimum_weight=0
-# TODO add exponential smoothing
-# averaging_function = getattr(utils, args.type_of_average)
 
 
 for epoch in range(start_epoch, args.epochs):
@@ -262,7 +231,7 @@ for epoch in range(start_epoch, args.epochs):
         val_res = {'loss': None, 'accuracy': None}
     
     # when args.swa_c_epochs==1 (the default), the third condition is always true
-    # compute moving average when in swa mode
+    # compute average when in swa mode
     if args.swa and (epoch + 1) >= args.swa_start and (epoch + 1 - args.swa_start) % args.swa_c_epochs == 0:
         
         # check loss and accuracy on the validation set when evaluation frequency is reached and for the final epoch
@@ -279,8 +248,6 @@ for epoch in range(start_epoch, args.epochs):
         # our swa
         base_weight=results[args.weight_from_data][args.type_of_weight]
 
-        # list_of_scores.append(base_weight)
-
         weight=utils.get_weight(base_weight, args.type_of_weight, minimum_weight, scale=args.scale_weights)
       
         
@@ -294,8 +261,6 @@ for epoch in range(start_epoch, args.epochs):
             
         else: # our swa weighted average, iteration 1+
              
-            # TODO add exponential smoothing
-            # utils.weighted_moving_average(our_swa_model, model, weights_to_use[-1], sum(weights_to_use))
             if (args.type_of_average=='weighted_moving_average'):
                 utils.weighted_moving_average(our_swa_model, model, weight,weight_sum)
             if (args.type_of_average=='exponential_smoothing'):

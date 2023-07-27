@@ -45,17 +45,6 @@ parser.add_argument('--sgd_duration', type=float, default=10, help='duration of 
 parser.add_argument('--lr_final', type=float, default=0.001, help='the final learning rate to use when decay ends (default: 0.001)')
 parser.add_argument('--decay_start', type=float, default=0.1, help='precentage of training time until learning rate decay starts (default: 0.1)')
 parser.add_argument('--decay_end', type=float, default=0.9, help='precentage of training time when learning rate decay ends (default: 0.9)')
-parser.add_argument('--decay_after_swa', type=bool, default=True, help='when to decrease learning rate (default: True)')
-
-
-
-# parser.add_argument('--decrease', type=float, default=0.9, help='multiply learning rate by this value after SWA (default: 0.9)')
-# parser.add_argument('--lr_cycle', type=int, default=50, help='lengh of cyclical lr (default: 50)')
-
-
-# parser.add_argument('--trigger', type=float, default=-0.02, help='smoothed average of loss difference to trigger SWA start (-0.02)')
-# parser.add_argument('--difference_init', type=float, default=1.0, help='W0 for exponenential smoothing (default: 1.0)')
-# parser.add_argument('--alpha', type=float, default=0.3, help='smoothing factor to be used for exponential smoothing (default: 0.3)')
 
 
 
@@ -121,28 +110,11 @@ loaders = {
 
 print('Preparing models')
 
-default_model = model_cfg.base(*model_cfg.args, num_classes=num_classes, **model_cfg.kwargs)
-default_model.to(device)
-
-
 model = model_cfg.base(*model_cfg.args, num_classes=num_classes, **model_cfg.kwargs)
 model.to(device)
 
-
-# swa model 
-swa_model = model_cfg.base(*model_cfg.args, num_classes=num_classes, **model_cfg.kwargs)
-swa_model.to(device)
-
-
-print('SWAT-SGD training')
-# print(f'SWA will be triggered when loss difference reaches: {args.trigger}')
+print('SGD training')
 print(f'SGD will run for {args.sgd_duration+args.swa_duration} epochs')
-print(f'SWA will average last {args.swa_duration} epochs')
-print(f'learning rate decrease after swa ends')
-
-# print(f'learning rate will decrease by: {args.decrease}')
-
-# train_val_loss_diff=args.difference_init
 
 
 slope=(args.lr_init-args.lr_final)/(args.decay_start-args.decay_end)  # 
@@ -173,7 +145,6 @@ if args.resume is not None:
     print('Resume training from %s' % args.resume)
     checkpoint = torch.load(args.resume)
     start_epoch = checkpoint['epoch']
-    # train_val_loss_diff=train_val_loss_diff,
     model.load_state_dict(checkpoint['state_dict'])
     optimizer.load_state_dict(checkpoint['optimizer'])
     
@@ -192,7 +163,6 @@ val_res = {'loss': None, 'accuracy': None}
 
 
 
-
 utils.save_checkpoint(
     args.dir,
     start_epoch,
@@ -201,10 +171,7 @@ utils.save_checkpoint(
     train_res=train_res,
     val_res=val_res,
     default_train_res = default_train_res,
-    default_val_res = default_val_res,
-
-    # train_val_loss_diff=train_val_loss_diff,
-    
+    default_val_res = default_val_res,    
     state_dict=model.state_dict(),   
     optimizer=optimizer.state_dict()
 )
@@ -224,11 +191,10 @@ swa_n=0
 
 for epoch in range(start_epoch, args.epochs):
     time_ep = time.time()
-
-    if (~args.decay_after_swa):
-        lr = schedule(epoch)
-        utils.adjust_learning_rate(optimizer, lr)
-
+    
+    lr = schedule(epoch)
+    utils.adjust_learning_rate(optimizer, lr)
+    
     train_res = utils.train_epoch(loaders['train'], model, criterion, optimizer)
     
     # check loss and accuracy on the validation set 
@@ -236,18 +202,8 @@ for epoch in range(start_epoch, args.epochs):
     val_res = utils.eval(loaders['validation'], model, criterion)
     
  
-    # train_val_loss_diff=train_val_loss_diff*(1-args.alpha) + args.alpha*(train_res['loss']-val_res['loss'])
     
-    
-    # if train_val_loss_diff < args.trigger and not swa_mode:
-    if (epoch+1)%args.sgd_duration==0 and not swa_mode:
-        swa_mode=True
-    
-    if swa_mode:
-        
-        utils.moving_average(swa_model, model, 1.0 / (swa_n + 1))
-        swa_n+=1
-        
+
 
     if (epoch + 1) % args.save_freq == 0:
         utils.save_checkpoint(
@@ -257,7 +213,6 @@ for epoch in range(start_epoch, args.epochs):
             # our additions
             train_res=train_res,
             val_res=val_res,
-            # train_val_loss_diff=train_val_loss_diff,
             lr=optimizer.param_groups[0]['lr'],
 
             state_dict=model.state_dict(),
@@ -266,7 +221,7 @@ for epoch in range(start_epoch, args.epochs):
 
     # print progress
     time_ep = time.time() - time_ep
-    values = [epoch + 1, lr, swa_n, swa_mode, train_res['loss'], train_res['accuracy'], val_res['loss'], val_res['accuracy'], time_ep]  # train_val_loss_diff
+    values = [epoch + 1, lr, swa_n, swa_mode, train_res['loss'], train_res['accuracy'], val_res['loss'], val_res['accuracy'], time_ep]  
     
     table = tabulate.tabulate([values], columns, tablefmt='simple', floatfmt='8.4f')
     if epoch % 25 == 0:
@@ -275,24 +230,6 @@ for epoch in range(start_epoch, args.epochs):
     else:
         table = table.split('\n')[2]
     print(table)
-    
-          
-    if swa_n >= args.swa_duration:
-        
-        # stop swa
-        swa_mode=False
-        swa_n=0
-        # train_val_loss_diff=args.difference_init/(epoch+1)
-
-        #copy swa model weights to the model we train
-        # continue training the swa model
-        utils.moving_average(model, swa_model, 1.0) 
-        
-        if args.decay_after_swa:
-            # reduce learning rate
-            lr = schedule(epoch)
-            utils.adjust_learning_rate(optimizer, lr)
-
     
 
 
@@ -303,9 +240,7 @@ test_res = utils.eval(loaders['test'], model, criterion)
 
 
 # pring test results
-
 print('__________________________')
-# print(f'the test accuracy of the original SWA is: {test_res["accuracy"]:.4f}')
 print(f'the test accuracy is: {test_res["accuracy"]:.4f}')
 
 
