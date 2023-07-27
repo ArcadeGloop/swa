@@ -1,5 +1,5 @@
 # Understanding & Improving Stochastic Weight Averaging (SWA)
-This repository was made as part of the final project in the 'Introduction to Deep Learning' course in Ben Gurion University of the Negev, Israel.
+This repository was made as part of the final project in the 'Introduction to Deep Learning' course in the department of Industrial Engineering and Management in Ben Gurion University of the Negev, Israel.
 
 This repository is a fork of the original repository that contains a PyTorch implementation of the Stochastic Weight Averaging (SWA) training method for DNNs from the paper
 
