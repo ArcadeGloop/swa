@@ -28,29 +28,32 @@ the comperative SGD training for experiment 2 is implemented in exp_2_sgd_train.
 The commands we used for running experiment 1:
 
 initial pre training: 
-
+```bash
 python3 swa/train.py --dir=training_dir --dataset=CIFAR10 --data_path=data  --model=PreResNet14 --epochs=150 --lr_init=0.1 --wd=3e-4 --save_freq=1
+```
 
 different averaging techniques:
 
-
+```bash
 python3 swa/train.py --resume swa/checkpoints/checkpoint-150.pt --dir=training_dir --dataset=CIFAR10 --data_path=data  --model=PreResNet14 --epochs=200 --lr_init=0.1 --wd=3e-4  --save_freq=1 --swa --swa_start=151 --swa_lr=0.05 --type_of_average=exponential_smoothing --smoothing_factor=0.1
 python3 swa/train.py --resume swa/checkpoints/checkpoint-150.pt --dir=training_dir --dataset=CIFAR10 --data_path=data  --model=PreResNet14 --epochs=200 --lr_init=0.1 --wd=3e-4  --save_freq=1 --swa --swa_start=151 --swa_lr=0.05 --weight_from_data=validation --type_of_weight=accuracy --type_of_average=weighted_moving_average --scale_weights=True
 python3 swa/train.py --resume swa/checkpoints/checkpoint-150.pt --dir=training_dir --dataset=CIFAR10 --data_path=data  --model=PreResNet14 --epochs=200 --lr_init=0.1 --wd=3e-4  --save_freq=1 --swa --swa_start=151 --swa_lr=0.05 --weight_from_data=validation --type_of_weight=accuracy --type_of_average=weighted_moving_average --scale_weights=False
-
 python3 swa/train.py --resume swa/checkpoints/checkpoint-150.pt --dir=training_dir --dataset=CIFAR10 --data_path=data  --model=PreResNet14 --epochs=200 --lr_init=0.1 --wd=3e-4  --save_freq=1 --swa --swa_start=151 --swa_lr=0.05 --weight_from_data=validation --type_of_weight=loss --type_of_average=weighted_moving_average --scale_weights=False
 python3 swa/train.py --resume swa/checkpoints/checkpoint-150.pt --dir=training_dir --dataset=CIFAR10 --data_path=data  --model=PreResNet14 --epochs=200 --lr_init=0.1 --wd=3e-4  --save_freq=1 --swa --swa_start=151 --swa_lr=0.05 --weight_from_data=validation --type_of_weight=loss --type_of_average=weighted_moving_average --scale_weights=True
 python3 swa/train.py --resume swa/checkpoints/checkpoint-150.pt --dir=training_dir --dataset=CIFAR10 --data_path=data  --model=PreResNet14 --epochs=200 --lr_init=0.1 --wd=3e-4  --save_freq=1 --swa --swa_start=151 --swa_lr=0.05 --type_of_average=exponential_smoothing  --smoothing_factor=0.9
 python3 swa/train.py --resume swa/checkpoints/checkpoint-150.pt --dir=training_dir --dataset=CIFAR10 --data_path=data  --model=PreResNet14 --epochs=200 --lr_init=0.1 --wd=3e-4  --save_freq=1 --swa --swa_start=151 --swa_lr=0.05 --type_of_average=exponential_smoothing  --smoothing_factor=0.5
+```
 
 The commands we used for running experiment 2:
 
 regular SGD:
+```bash
 python3 swa/experiment_2_sgd.py --sgd_duration=200  --dir=training_dir --model=PreResNet14 --dataset=CIFAR10 --data_path=data  --epochs=150 --lr_init=0.1 --wd=3e-4  --save_freq=1 --device=cuda
-
+```
 Iterative SWA:
+```bash
 python3 swa/exp_2_iswa_train.py --resume=swa/checkpoints/checkpoint-9.pt --dir=training_dir --model=PreResNet14 --dataset=CIFAR10 --data_path=data  --epochs=150 --lr_init=0.1 --wd=3e-4  --save_freq=1 --device=cuda
-
+```
 
 
 # From Original Repository
